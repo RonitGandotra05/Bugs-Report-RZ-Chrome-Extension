@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Screenshot to Google Drive</title>
-  <script src="popup.js" defer></script>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    #takeScreenshot { padding: 10px 20px; }
-  </style>
+  <title>Screenshot to S3</title>
 </head>
 <body>
-  <button id="takeScreenshot">Take Screenshot & Upload</button>
+  <button id="screenshot-btn">Take Screenshot</button>
+
+  <!-- Include the AWS SDK -->
+  <script src="aws-sdk.min.js"></script>
+  <script src="popup.js"></script>
 </body>
 </html>
