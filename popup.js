@@ -17,7 +17,7 @@ function uploadToServer(dataUrl, description, recipient) {
   formData.append('description', description);
   formData.append('recipient', recipient);
 
-  fetch('http://localhost:8000/upload', {  // Replace with your server URL if different
+  fetch('http://localhost:8001/upload', {  // Ensure the correct URL and port
     method: 'POST',
     body: formData
   })
