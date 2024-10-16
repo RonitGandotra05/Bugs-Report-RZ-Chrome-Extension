@@ -1,13 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Screenshot to S3</title>
+  <title>Screenshot to Server</title>
 </head>
 <body>
-  <button id="screenshot-btn">Take Screenshot</button>
+  <textarea id="description" placeholder="Enter description"></textarea><br><br>
 
-  <!-- Include the AWS SDK -->
-  <script src="aws-sdk.min.js"></script>
+  <label for="recipient">Select Recipient:</label><br>
+  <select id="recipient">
+    <option value="Ronit">Ronit</option>
+    <option value="Kapil">Kapil</option>
+    <option value="Yash">Yash</option>
+    <option value="Saurabh">Saurabh</option>
+    <option value="Sandeep Yadav">Sandeep Yadav</option>
+    <option value="Shubham Sachdeva">Shubham Sachdeva</option>
+    <option value="Piyush Suneja">Piyush Suneja</option>
+    <option value="Yash Kumar Pal">Yash Kumar Pal</option>
+    <option value="Kapil Sharma">Kapil Sharma</option>
+    <option value="Arun Kumar">Arun Kumar</option>
+    <option value="Rohan Thakur">Rohan Thakur</option>
+    <option value="Subhashish Behera">Subhashish Behera</option>
+    <option value="Boby">Boby</option>
+    <option value="Ankita Singh">Ankita Singh</option>
+    <option value="CP Dhaundiyal">CP Dhaundiyal</option>
+    <option value="Sajal">Sajal</option>
+    <option value="Ryan">Ryan</option>
+    <option value="Karan Grover">Karan Grover</option>
+    <option value="Karan Sachdeva">Karan Sachdeva</option>
+    <option value="Vikas Singh">Vikas Singh</option>
+    <option value="None">None</option>
+  </select><br><br>
+
+  <button id="screenshot-btn">Take Screenshot</button>
   <script src="popup.js"></script>
 </body>
 </html>
