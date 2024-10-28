@@ -7,40 +7,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const uploadForm = document.getElementById('upload-form');
   const logoutButton = document.getElementById('logout-btn');
-  const screenshotPreview = document.getElementById('screenshot-preview');
+  const mediaDropZone = document.getElementById('media-drop-zone');
   const uploadButton = document.getElementById('upload-btn');
+  const loader = document.getElementById('loader');
 
-  let clipboardImage = null;
+  let clipboardDataUrl = null;
+  let mediaType = null; // 'image' or 'video'
   let accessToken = null;
 
   // Recipient name to email and phone number mapping
   const recipientDataMap = {
-    "Ronit": { email: "ronit@example.com", phone: "918130294123" },
-    "Kapil": { email: "kapil@example.com", phone: "919871457336" },
-    "Yash": { email: "yash@example.com", phone: "918194939908" },
-    "Saurabh": { email: "saurabh@example.com", phone: "918130858522" },
-    "Sandeep Yadav": { email: "sandeep.yadav@example.com", phone: "917503667613" },
-    "Shubham Sachdeva": { email: "shubham.sachdeva@example.com", phone: "917827764486" },
-    "Piyush Suneja": { email: "piyush.suneja@example.com", phone: "918708680186" },
-    "Yash Kumar Pal": { email: "yash.kumar.pal@example.com", phone: "918448016807" },
-    "Kapil Sharma": { email: "kapil.sharma@example.com", phone: "919871457336" },
-    "Arun Kumar": { email: "arun.kumar@example.com", phone: "918178118932" },
-    "Rohan Thakur": { email: "rohan.thakur@example.com", phone: "917982906149" },
-    "Subhashish Behera": { email: "subhashish.behera@example.com", phone: "919558078941" },
-    "Boby": { email: "boby@example.com", phone: "919718748449" },
-    "Ankita Singh": { email: "ankita.singh@example.com", phone: "918920903354" },
-    "CP Dhaundiyal": { email: "cp.dhaundiyal@example.com", phone: "918755023705" },
-    "Sajal": { email: "sajal@example.com", phone: "916280097568" },
-    "Ryan": { email: "ryan@example.com", phone: "918586862674" },
-    "Karan Grover": { email: "karan.grover@example.com", phone: "918208742993" },
-    "Karan Sachdeva": { email: "karan.sachdeva@example.com", phone: "919773923009" },
-    "Vikas Singh": { email: "vikas.singh@example.com", phone: "919958311494" },
+    "Ronit": { email: "ronit@example.com", phone: "919999999999" },
+    "Kapil": { email: "kapil@example.com", phone: "919888888888" },
+    "Yash": { email: "yash@example.com", phone: "919777777777" },
+    "Saurabh": { email: "saurabh@example.com", phone: "919666666666" },
+    "Sandeep Yadav": { email: "sandeep.yadav@example.com", phone: "919555555555" },
+    "Shubham Sachdeva": { email: "shubham.sachdeva@example.com", phone: "919444444444" },
+    "Piyush Suneja": { email: "piyush.suneja@example.com", phone: "919333333333" },
+    "Yash Kumar Pal": { email: "yash.kumar.pal@example.com", phone: "919222222222" },
+    "Kapil Sharma": { email: "kapil.sharma@example.com", phone: "919111111111" },
+    "Arun Kumar": { email: "arun.kumar@example.com", phone: "919000000000" },
+    "Rohan Thakur": { email: "rohan.thakur@example.com", phone: "918999999999" },
+    "Subhashish Behera": { email: "subhashish.behera@example.com", phone: "918888888888" },
+    "Boby": { email: "boby@example.com", phone: "918777777777" },
+    "Ankita Singh": { email: "ankita.singh@example.com", phone: "918666666666" },
+    "CP Dhaundiyal": { email: "cp.dhaundiyal@example.com", phone: "918555555555" },
+    "Sajal": { email: "sajal@example.com", phone: "918444444444" },
+    "Ryan": { email: "ryan@example.com", phone: "918333333333" },
+    "Karan Grover": { email: "karan.grover@example.com", phone: "918222222222" },
+    "Karan Sachdeva": { email: "karan.sachdeva@example.com", phone: "918111111111" },
+    "Vikas Singh": { email: "vikas.singh@example.com", phone: "918000000000" },
     "None": { email: "none@example.com", phone: null }
   };
 
-  // UltraMsg API credentials (Note: Including these in client-side code is insecure)
-  const ULTRAMSG_INSTANCE_ID = 'instance29265';
-  const ULTRAMSG_TOKEN = 'fa0r4vzkca0bwm8r';
+  // UltraMsg API credentials (Replace with your actual credentials)
+  const ULTRAMSG_INSTANCE_ID = 'YOUR_INSTANCE_ID'; // e.g., 'instance12345'
+  const ULTRAMSG_TOKEN = 'YOUR_ULTRAMSG_TOKEN'; // e.g., 'abc123def456'
 
   // Check if user is already logged in
   accessToken = localStorage.getItem('accessToken');
@@ -59,6 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
       alert('Please enter email and password.');
       return;
     }
+
+    showLoader(); // Show loader when login starts
 
     loginUser(email, password);
   });
@@ -83,10 +87,12 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(data => {
       accessToken = data.access_token;
       localStorage.setItem('accessToken', accessToken);
+      hideLoader(); // Hide loader after successful login
       showUploadForm();
     })
     .catch(error => {
       console.error('Error:', error);
+      hideLoader(); // Hide loader on error
       alert('Login failed: ' + error.message);
     });
   }
@@ -126,30 +132,101 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Listen for the paste event to capture the clipboard image
+  // Drag and Drop Functionality
+  // Prevent default drag behaviors
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    mediaDropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  // Highlight drop area when item is dragged over it
+  mediaDropZone.addEventListener('dragenter', () => mediaDropZone.classList.add('highlight'), false);
+  mediaDropZone.addEventListener('dragover', () => mediaDropZone.classList.add('highlight'), false);
+  mediaDropZone.addEventListener('dragleave', () => mediaDropZone.classList.remove('highlight'), false);
+  mediaDropZone.addEventListener('drop', () => mediaDropZone.classList.remove('highlight'), false);
+
+  // Handle dropped files
+  mediaDropZone.addEventListener('drop', handleDrop, false);
+
+  function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.indexOf('image') !== -1) {
+        mediaType = 'image';
+      } else if (file.type.indexOf('video') !== -1) {
+        mediaType = 'video';
+      } else {
+        alert('Please drop a valid image or video file.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        clipboardDataUrl = e.target.result;
+        displayMediaPreview(clipboardDataUrl, mediaType);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Copy-Paste Functionality
   document.addEventListener('paste', (event) => {
     const items = (event.clipboardData || event.originalEvent.clipboardData).items;
     for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const blob = items[i].getAsFile();
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const blob = item.getAsFile();
+        mediaType = 'image';
         const reader = new FileReader();
         reader.onload = function(e) {
-          clipboardImage = e.target.result;
-          screenshotPreview.style.backgroundImage = `url(${clipboardImage})`;
-          screenshotPreview.textContent = '';
+          clipboardDataUrl = e.target.result;
+          displayMediaPreview(clipboardDataUrl, mediaType);
         };
         reader.readAsDataURL(blob);
+        break;
+      } else if (item.type.indexOf('video') !== -1) {
+        const blob = item.getAsFile();
+        mediaType = 'video';
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          clipboardDataUrl = e.target.result;
+          displayMediaPreview(clipboardDataUrl, mediaType);
+        };
+        reader.readAsDataURL(blob);
+        break;
       }
     }
   });
 
-  // Upload the pasted screenshot, description, and recipient
+  // Function to display media preview
+  function displayMediaPreview(dataUrl, type) {
+    mediaDropZone.innerHTML = ''; // Clear previous content
+    if (type === 'image') {
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      mediaDropZone.appendChild(img);
+    } else if (type === 'video') {
+      const video = document.createElement('video');
+      video.src = dataUrl;
+      video.controls = true;
+      mediaDropZone.appendChild(video);
+    }
+  }
+
+  // Upload the pasted or dropped media, description, and recipient
   uploadButton.addEventListener('click', function() {
     const description = document.getElementById('description').value;
     const recipientName = document.getElementById('recipient').value;
 
-    if (!clipboardImage) {
-      alert('Please paste a screenshot before uploading.');
+    if (!clipboardDataUrl) {
+      alert('Please paste or drop an image or video before uploading.');
       return;
     }
 
@@ -165,27 +242,31 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    uploadToServer(clipboardImage, description, recipientData.email)
+    showLoader(); // Show loader during upload
+
+    uploadToServer(clipboardDataUrl, description, recipientData.email, mediaType)
       .then(responseData => {
-        alert('Screenshot, description, and recipient uploaded successfully.');
+        hideLoader(); // Hide loader after upload completes
+        alert('Media, description, and recipient uploaded successfully.');
         resetForm();
 
         // Send WhatsApp message if recipient is not "None"
         if (recipientName !== "None" && recipientData.phone) {
-          sendWhatsAppMessage(recipientData.phone, responseData.url, description);
+          sendWhatsAppMessage(recipientData.phone, responseData.url, description, mediaType);
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('Error uploading screenshot: ' + error.message);
+        hideLoader(); // Hide loader on error
+        alert('Error uploading media: ' + error.message);
       });
   });
 
-  function uploadToServer(dataUrl, description, recipientEmail) {
+  function uploadToServer(dataUrl, description, recipientEmail, type) {
     const blob = dataURLtoBlob(dataUrl);
 
     const formData = new FormData();
-    formData.append('file', blob, 'screenshot.png');
+    formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
     formData.append('description', description);
     formData.append('recipient_email', recipientEmail);
 
@@ -206,14 +287,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function sendWhatsAppMessage(phoneNumber, imageLink, caption) {
-    const url = `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/image`;
-    const payload = {
-      token: ULTRAMSG_TOKEN,
-      to: phoneNumber + "@c.us",
-      image: imageLink,
-      caption: "Hi, the following bug has been found:\n" + caption
-    };
+  function sendWhatsAppMessage(phoneNumber, mediaLink, caption, type) {
+    let url, payload;
+    if (type === 'image') {
+      url = `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/image`;
+      payload = {
+        token: ULTRAMSG_TOKEN,
+        to: phoneNumber + "@c.us",
+        image: mediaLink,
+        caption: "Hi, the following bug has been found:\n" + caption
+      };
+    } else if (type === 'video') {
+      url = `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/video`;
+      payload = {
+        token: ULTRAMSG_TOKEN,
+        to: phoneNumber + "@c.us",
+        video: mediaLink,
+        caption: "Hi, the following bug has been found:\n" + caption
+      };
+    }
 
     fetch(url, {
       method: 'POST',
@@ -254,10 +346,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Reset the form after successful upload
   function resetForm() {
-    clipboardImage = null;
-    screenshotPreview.style.backgroundImage = '';
-    screenshotPreview.textContent = 'Paste your screenshot here';
+    clipboardDataUrl = null;
+    mediaType = null;
+    mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
     document.getElementById('description').value = '';
     document.getElementById('recipient').selectedIndex = 0;
+  }
+
+  // Loader control functions
+  function showLoader() {
+    loader.style.display = 'flex';
+  }
+
+  function hideLoader() {
+    loader.style.display = 'none';
   }
 });

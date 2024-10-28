@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Screenshot to S3",
-  "description": "Take a screenshot and upload it to S3.",
+  "description": "Take a screenshot and upload it to Dashboard.",
   "version": "1.0",
-  "permissions": ["tabs", "activeTab"],
+  "permissions": ["tabs", "activeTab", "storage"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Screenshot to S3",
+    "default_title": " Upload Media",
     "default_icon": {
       "16": "icon.png"
     }

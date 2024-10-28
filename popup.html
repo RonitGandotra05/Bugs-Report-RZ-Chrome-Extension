@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Paste Screenshot to Server</title>
+  <title>Upload Media</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      width: 400px; /* Increased the width for a larger dialog */
+      width: 400px;
       padding: 10px;
       box-sizing: border-box;
       margin: 0;
@@ -31,9 +31,9 @@
       background-color: #d32f2f;
     }
 
-    #screenshot-preview {
+    #media-drop-zone {
       width: 100%;
-      max-width: 380px; /* Adjusted for new width */
+      max-width: 380px;
       height: 200px;
       border: 2px dashed #ccc;
       display: flex;
@@ -45,6 +45,19 @@
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
+      position: relative;
+      transition: background-color 0.3s;
+    }
+
+    #media-drop-zone.highlight {
+      border-color: #4285F4;
+      background-color: #f0f8ff;
+    }
+
+    #media-drop-zone video,
+    #media-drop-zone img {
+      max-width: 100%;
+      max-height: 100%;
     }
 
     input, textarea, select {
@@ -76,9 +89,43 @@
     label {
       font-weight: bold;
     }
+
+    /* Loader Styles */
+    #loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 400px;
+      height: 600px;
+      background: rgba(255, 255, 255, 0.8);
+      display: none; /* Hidden by default */
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .spinner {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #4285F4;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
   </style>
 </head>
 <body>
+
+  <!-- Loader -->
+  <div id="loader">
+    <div class="spinner"></div>
+  </div>
 
   <!-- Login Form -->
   <div id="login-form">
@@ -91,8 +138,8 @@
   <!-- Upload Form -->
   <div id="upload-form" style="display: none;">
     <button id="logout-btn">Logout</button>
-    <h2>Upload Screenshot</h2>
-    <div id="screenshot-preview">Paste your screenshot here</div>
+    <h2>Upload Media</h2>
+    <div id="media-drop-zone">Copy paste any media file here</div>
 
     <textarea id="description" placeholder="Enter description"></textarea>
 
@@ -121,7 +168,7 @@
       <option value="Vikas Singh">Vikas Singh</option>
       <option value="None">None</option>
     </select>
-    <button id="upload-btn">Upload Screenshot</button>
+    <button id="upload-btn">Upload Media</button>
   </div>
 
   <script src="popup.js"></script>
