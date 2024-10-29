@@ -4,67 +4,53 @@ document.addEventListener('DOMContentLoaded', function() {
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const loginButton = document.getElementById('login-btn');
+  const showPasswordCheckbox = document.getElementById('show-password'); // Show Password Checkbox
 
   const uploadForm = document.getElementById('upload-form');
   const logoutButton = document.getElementById('logout-btn');
   const mediaDropZone = document.getElementById('media-drop-zone');
   const uploadButton = document.getElementById('upload-btn');
   const loader = document.getElementById('loader');
+  const recipientSelect = document.getElementById('recipient');
 
   let clipboardDataUrl = null;
   let mediaType = null; // 'image' or 'video'
   let accessToken = null;
 
-  // Recipient name to email and phone number mapping
-  const recipientDataMap = {
-    "Ronit": { email: "ronit@example.com", phone: "919999999999" },
-    "Kapil": { email: "kapil@example.com", phone: "919888888888" },
-    "Yash": { email: "yash@example.com", phone: "919777777777" },
-    "Saurabh": { email: "saurabh@example.com", phone: "919666666666" },
-    "Sandeep Yadav": { email: "sandeep.yadav@example.com", phone: "919555555555" },
-    "Shubham Sachdeva": { email: "shubham.sachdeva@example.com", phone: "919444444444" },
-    "Piyush Suneja": { email: "piyush.suneja@example.com", phone: "919333333333" },
-    "Yash Kumar Pal": { email: "yash.kumar.pal@example.com", phone: "919222222222" },
-    "Kapil Sharma": { email: "kapil.sharma@example.com", phone: "919111111111" },
-    "Arun Kumar": { email: "arun.kumar@example.com", phone: "919000000000" },
-    "Rohan Thakur": { email: "rohan.thakur@example.com", phone: "918999999999" },
-    "Subhashish Behera": { email: "subhashish.behera@example.com", phone: "918888888888" },
-    "Boby": { email: "boby@example.com", phone: "918777777777" },
-    "Ankita Singh": { email: "ankita.singh@example.com", phone: "918666666666" },
-    "CP Dhaundiyal": { email: "cp.dhaundiyal@example.com", phone: "918555555555" },
-    "Sajal": { email: "sajal@example.com", phone: "918444444444" },
-    "Ryan": { email: "ryan@example.com", phone: "918333333333" },
-    "Karan Grover": { email: "karan.grover@example.com", phone: "918222222222" },
-    "Karan Sachdeva": { email: "karan.sachdeva@example.com", phone: "918111111111" },
-    "Vikas Singh": { email: "vikas.singh@example.com", phone: "918000000000" },
-    "None": { email: "none@example.com", phone: null }
-  };
-
-  // UltraMsg API credentials (Replace with your actual credentials)
-  const ULTRAMSG_INSTANCE_ID = 'YOUR_INSTANCE_ID'; // e.g., 'instance12345'
-  const ULTRAMSG_TOKEN = 'YOUR_ULTRAMSG_TOKEN'; // e.g., 'abc123def456'
+  // FastAPI Endpoint (Replace with your actual FastAPI upload endpoint)
+  const FASTAPI_UPLOAD_ENDPOINT = 'https://bugapi.tripxap.com/upload'; // e.g., 'https://api.yourdomain.com/upload'
 
   // Check if user is already logged in
   accessToken = localStorage.getItem('accessToken');
   if (accessToken) {
     showUploadForm();
+    fetchRegisteredUsers();
   } else {
     showLoginForm();
   }
 
   // Event listener for login button
   loginButton.addEventListener('click', function() {
-    const email = emailInput.value;
-    const password = passwordInput.value;
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
     if (!email || !password) {
-      alert('Please enter email and password.');
+      alert('Please enter both email and password.');
       return;
     }
 
-    showLoader(); // Show loader when login starts
+    showLoader(); // Show loader during login
 
     loginUser(email, password);
+  });
+
+  // Event listener for Show Password checkbox
+  showPasswordCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+      passwordInput.type = 'text';
+    } else {
+      passwordInput.type = 'password';
+    }
   });
 
   function loginUser(email, password) {
@@ -72,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     formData.append('username', email);
     formData.append('password', password);
 
-    fetch('https://bugapi.tripxap.com/login', {
+    fetch('https://bugapi.tripxap.com/login', { // Replace with your FastAPI login endpoint if different
       method: 'POST',
       body: formData
     })
@@ -89,9 +75,10 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.setItem('accessToken', accessToken);
       hideLoader(); // Hide loader after successful login
       showUploadForm();
+      fetchRegisteredUsers(); // Fetch users after login
     })
     .catch(error => {
-      console.error('Error:', error);
+      console.error('Login Error:', error);
       hideLoader(); // Hide loader on error
       alert('Login failed: ' + error.message);
     });
@@ -113,23 +100,76 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   function logoutUser() {
-    fetch('https://bugapi.tripxap.com/logout', {
+    fetch('https://bugapi.tripxap.com/logout', { // Replace with your FastAPI logout endpoint if different
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + accessToken
       }
     })
     .then(response => {
-      accessToken = null;
-      localStorage.removeItem('accessToken');
-      showLoginForm();
+      if (response.ok) {
+        localStorage.removeItem('accessToken');
+        accessToken = null;
+        showLoginForm();
+        resetRecipientDropdown();
+      } else {
+        throw new Error('Logout failed');
+      }
     })
     .catch(error => {
-      console.error('Error:', error);
-      accessToken = null;
+      console.error('Logout Error:', error);
       localStorage.removeItem('accessToken');
+      accessToken = null;
       showLoginForm();
+      resetRecipientDropdown();
     });
+  }
+
+  // Fetch registered users from FastAPI
+  function fetchRegisteredUsers() {
+    fetch('https://bugapi.tripxap.com/users', { // Replace with your FastAPI /users endpoint if different
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      return response.json();
+    })
+    .then(userList => {
+      populateRecipientDropdown(userList);
+    })
+    .catch(error => {
+      console.error('Fetch Users Error:', error);
+      alert('Failed to fetch registered users.');
+    });
+  }
+
+  // Populate the recipient dropdown with fetched users
+  function populateRecipientDropdown(users) {
+    // Clear existing options except the first one ("Select a recipient") and "None"
+    while (recipientSelect.options.length > 2) { // Assuming first option is prompt and second is "None"
+      recipientSelect.remove(2);
+    }
+
+    // Add users to the dropdown
+    users.forEach(userName => {
+      const option = document.createElement('option');
+      option.value = userName;
+      option.text = userName;
+      recipientSelect.add(option);
+    });
+  }
+
+  // Reset recipient dropdown to default state
+  function resetRecipientDropdown() {
+    // Remove all options except the first one ("Select a recipient") and "None"
+    while (recipientSelect.options.length > 2) { // Assuming first option is prompt and second is "None"
+      recipientSelect.remove(2);
+    }
   }
 
   // Drag and Drop Functionality
@@ -158,9 +198,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (files.length > 0) {
       const file = files[0];
-      if (file.type.indexOf('image') !== -1) {
+      if (file.type.startsWith('image/')) {
         mediaType = 'image';
-      } else if (file.type.indexOf('video') !== -1) {
+      } else if (file.type.startsWith('video/')) {
         mediaType = 'video';
       } else {
         alert('Please drop a valid image or video file.');
@@ -181,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const items = (event.clipboardData || event.originalEvent.clipboardData).items;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.type.indexOf('image') !== -1) {
+      if (item.type.startsWith('image/')) {
         const blob = item.getAsFile();
         mediaType = 'image';
         const reader = new FileReader();
@@ -191,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         reader.readAsDataURL(blob);
         break;
-      } else if (item.type.indexOf('video') !== -1) {
+      } else if (item.type.startsWith('video/')) {
         const blob = item.getAsFile();
         mediaType = 'video';
         const reader = new FileReader();
@@ -222,8 +262,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Upload the pasted or dropped media, description, and recipient
   uploadButton.addEventListener('click', function() {
-    const description = document.getElementById('description').value;
-    const recipientName = document.getElementById('recipient').value;
+    const description = document.getElementById('description').value.trim();
+    const recipientName = recipientSelect.value;
 
     if (!clipboardDataUrl) {
       alert('Please paste or drop an image or video before uploading.');
@@ -235,45 +275,33 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    const recipientData = recipientDataMap[recipientName];
-
-    if (!recipientData) {
-      alert('Recipient data not found for the selected name.');
-      return;
-    }
-
     showLoader(); // Show loader during upload
 
-    uploadToServer(clipboardDataUrl, description, recipientData.email, mediaType)
+    uploadToServer(clipboardDataUrl, description, recipientName, mediaType)
       .then(responseData => {
         hideLoader(); // Hide loader after upload completes
-        alert('Media, description, and recipient uploaded successfully.');
+        alert('Media and description uploaded successfully.');
         resetForm();
-
-        // Send WhatsApp message if recipient is not "None"
-        if (recipientName !== "None" && recipientData.phone) {
-          sendWhatsAppMessage(recipientData.phone, responseData.url, description, mediaType);
-        }
       })
       .catch(error => {
-        console.error('Error:', error);
+        console.error('Upload Error:', error);
         hideLoader(); // Hide loader on error
         alert('Error uploading media: ' + error.message);
       });
   });
 
-  function uploadToServer(dataUrl, description, recipientEmail, type) {
+  function uploadToServer(dataUrl, description, recipientName, type) {
     const blob = dataURLtoBlob(dataUrl);
 
     const formData = new FormData();
     formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
     formData.append('description', description);
-    formData.append('recipient_email', recipientEmail);
+    formData.append('recipient_name', recipientName !== "None" ? recipientName : null);
 
-    return fetch('https://bugapi.tripxap.com/upload', {
+    return fetch(FASTAPI_UPLOAD_ENDPOINT, { // Ensure CORS is handled on the FastAPI server
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + accessToken
+        'Authorization': 'Bearer ' + accessToken // If your FastAPI endpoint requires authentication
       },
       body: formData
     })
@@ -287,54 +315,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function sendWhatsAppMessage(phoneNumber, mediaLink, caption, type) {
-    let url, payload;
-    if (type === 'image') {
-      url = `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/image`;
-      payload = {
-        token: ULTRAMSG_TOKEN,
-        to: phoneNumber + "@c.us",
-        image: mediaLink,
-        caption: "Hi, the following bug has been found:\n" + caption
-      };
-    } else if (type === 'video') {
-      url = `https://api.ultramsg.com/${ULTRAMSG_INSTANCE_ID}/messages/video`;
-      payload = {
-        token: ULTRAMSG_TOKEN,
-        to: phoneNumber + "@c.us",
-        video: mediaLink,
-        caption: "Hi, the following bug has been found:\n" + caption
-      };
-    }
-
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(data => {
-          throw new Error(data.info || 'WhatsApp message failed');
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('WhatsApp message sent:', data);
-    })
-    .catch(error => {
-      console.error('Error sending WhatsApp message:', error);
-      // Decide whether to alert the user or silently fail
-    });
-  }
-
   // Helper function to convert dataURL to Blob
   function dataURLtoBlob(dataUrl) {
     const arr = dataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : '';
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
@@ -350,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     mediaType = null;
     mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
     document.getElementById('description').value = '';
-    document.getElementById('recipient').selectedIndex = 0;
+    recipientSelect.selectedIndex = 0;
   }
 
   // Loader control functions
@@ -362,3 +347,4 @@ document.addEventListener('DOMContentLoaded', function() {
     loader.style.display = 'none';
   }
 });
+
