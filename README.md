@@ -1,348 +1,117 @@
-# Chrome Extension: Screenshot Uploader with Description and Strapi Integration
+# Bugs Report RZ Chrome Extension
+
+Bugs Report RZ is a Chrome browser extension designed to streamline the process of uploading media (images and videos) directly from your browser to a FastAPI backend. This extension provides a user-friendly interface for authentication, media selection, previewing, and uploading, ensuring a seamless experience for users needing to report bugs with multimedia attachments.
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Architecture Overview](#architecture-overview)
-- [Setup Instructions](#setup-instructions)
-  - [1. Clone the Repository](#1-clone-the-repository)
-  - [2. Setting Up the Chrome Extension](#2-setting-up-the-chrome-extension)
-  - [3. Setting Up the FastAPI Server](#3-setting-up-the-fastapi-server)
-  - [4. Configuring AWS S3](#4-configuring-aws-s3)
-  - [5. Setting Up Strapi CMS](#5-setting-up-strapi-cms)
-- [Running the Application](#running-the-application)
-- [Security Considerations](#security-considerations)
-- [Additional Recommendations](#additional-recommendations)
-- [Contributing](#contributing)
-- [License](#license)
+- [How It Works](#how-it-works)
+  - [User Authentication](#user-authentication)
+  - [Media Upload Process](#media-upload-process)
+    - [Drag and Drop](#drag-and-drop)
+    - [Paste from Clipboard](#paste-from-clipboard)
+    - [Media Preview](#media-preview)
+  - [Recipient Selection](#recipient-selection)
+  - [Session Management](#session-management)
+  - [Logout Functionality](#logout-functionality)
+- [Technical Overview](#technical-overview)
+  - [Extension Structure](#extension-structure)
+  - [Communication with FastAPI Backend](#communication-with-fastapi-backend)
+  - [Error Handling and Feedback](#error-handling-and-feedback)
 
----
 
-## Introduction
+## How It Works
 
-This project consists of a Chrome extension that allows users to take screenshots of their current browser tab, add a description, and upload both to an AWS S3 bucket. Additionally, the uploaded image link and description are reflected in a Strapi CMS for content management and display purposes.
+### User Authentication
 
-## Features
+Upon launching the extension, users are presented with a **Login Form** where they can enter their email and password. The extension securely sends these credentials to the FastAPI backend for authentication.
 
-- **Chrome Extension**:
-  - Capture screenshots of the current browser tab.
-  - Allow users to add a description to the screenshot.
-  - Send the screenshot and description to a FastAPI server.
+1. **Login Form Display**: 
+   - Users input their email and password.
+   - An option to "Show Password" is available for user convenience.
+2. **Authentication Request**:
+   - The extension sends a POST request to the FastAPI `/login` endpoint with the provided credentials.
+3. **Session Management**:
+   - On successful authentication, an access token is received and stored securely in the browser's local storage.
+   - The upload interface is then displayed, replacing the login form.
 
-- **FastAPI Server**:
-  - Receive the screenshot and description from the Chrome extension.
-  - Upload the image to an AWS S3 bucket.
-  - Send the image URL and description to a Strapi CMS.
+### Media Upload Process
 
-- **Strapi CMS**:
-  - Store and manage the image URLs and descriptions.
-  - Provide an interface for viewing and managing uploaded content.
+Once authenticated, users can upload media through the extension's **Upload Form**. The process supports both dragging and dropping files and pasting media from the clipboard.
 
-## Prerequisites
+#### Drag and Drop
 
-- **Google Chrome** (for running the extension)
-- **Python 3.7+** (for the FastAPI server)
-- **Node.js and npm** (for Strapi CMS)
-- **AWS Account** (for S3 bucket)
-- **AWS CLI** (optional, for configuring AWS)
-- **Access to AWS IAM** (to create access keys and set permissions)
+1. **Drag Media**: Users can drag an image or video file into the **Media Drop Zone**.
+2. **File Validation**: The extension checks the file type to ensure it's a valid image or video.
+3. **Preview Display**: A preview of the media is generated and displayed within the drop zone.
 
-## Architecture Overview
+#### Paste from Clipboard
 
-```
-[Chrome Extension] ---> [FastAPI Server] ---> [AWS S3]
-                                         |
-                                         ---> [Strapi CMS]
-```
+1. **Copy Media**: Users copy an image or video to their clipboard.
+2. **Paste Media**: Users paste the media into the **Media Drop Zone**.
+3. **File Validation and Preview**: Similar to drag and drop, the extension validates the media type and displays a preview.
 
-1. The **Chrome Extension** captures a screenshot and collects a description.
-2. It sends both to the **FastAPI Server**.
-3. The **FastAPI Server** uploads the image to **AWS S3** and sends the image URL and description to **Strapi CMS**.
-4. **Strapi CMS** stores the data, allowing for content management.
+#### Media Preview
 
-## Setup Instructions
+After selecting media via drag-and-drop or paste, the extension provides a real-time preview:
+- **Images**: Displayed directly within the drop zone.
+- **Videos**: Embedded with playback controls.
 
-### 1. Clone the Repository
+### Recipient Selection
 
-```bash
-git clone https://github.com/RonitGandotra05/screenshot_extension.git
-cd screenshot_extension
-```
+Users can select a recipient for their bug report from a dynamically populated dropdown list:
 
-### 2. Setting Up the Chrome Extension
+1. **Fetching Users**: Upon successful login, the extension fetches a list of registered users from the FastAPI `/users` endpoint.
+2. **Dropdown Population**: The fetched user list populates the **Recipient** dropdown, allowing users to select the appropriate recipient.
+3. **Default Option**: An option for "None" is available if no specific recipient is needed.
 
-#### A. Navigate to the Chrome Extension Directory
+### Session Management
 
-```bash
-cd chrome-extension
-```
+The extension manages user sessions through access tokens:
 
-#### B. Review Extension Files
+- **Token Storage**: Access tokens are stored in the browser's local storage, ensuring persistence across sessions.
+- **Automatic Login**: If a valid token exists, the extension bypasses the login form and directly displays the upload interface.
+- **Token Security**: Tokens are included in the `Authorization` header for authenticated requests to the backend.
 
-- **manifest.json**: Configuration file for the Chrome extension.
-- **popup.html**: The UI for the extension popup.
-- **popup.js**: JavaScript logic for capturing screenshots and sending data.
+### Logout Functionality
 
-#### C. Update `manifest.json`
+Users can securely end their session using the **Logout** button:
 
-Ensure that the `host_permissions` field includes your FastAPI server URL.
+1. **Logout Request**: Clicking the logout button sends a POST request to the FastAPI `/logout` endpoint.
+2. **Token Removal**: On successful logout, the access token is removed from local storage.
+3. **UI Reset**: The extension reverts to displaying the login form, ensuring the session is terminated.
 
-```json
-"host_permissions": ["http://localhost:8000/*"]
-```
+## Technical Overview
 
-#### D. Load the Extension into Chrome
+### Extension Structure
 
-1. Open Chrome and navigate to `chrome://extensions/`.
-2. Enable **Developer mode** by toggling the switch in the upper right corner.
-3. Click **Load unpacked** and select the `chrome-extension` directory.
+The extension comprises the following key files:
 
-### 3. Setting Up the FastAPI Server
+- **`manifest.json`**: Defines the extension's metadata, permissions, and resources.
+- **`popup.html`**: The HTML structure for the extension's popup interface, including login and upload forms.
+- **`popup.js`**: Handles all frontend logic, including user interactions, authentication, media processing, and communication with the backend.
+- **`icon.png`**: The icon displayed in the Chrome toolbar.
+- **`styles.css`**: (Included within `popup.html`) Styles the extension's UI components for a responsive and user-friendly interface.
 
-#### A. Navigate to the FastAPI Directory
+### Communication with FastAPI Backend
 
-```bash
-cd ../fastapi-server
-```
+The extension interacts with the FastAPI backend through several endpoints:
 
-#### B. Create a Virtual Environment (Optional but Recommended)
+- **Login** (`/login`): Authenticates users and retrieves an access token.
+- **Logout** (`/logout`): Terminates user sessions.
+- **Fetch Users** (`/users`): Retrieves a list of registered users for recipient selection.
+- **Upload Media** (`/upload`): Handles media uploads along with descriptions and recipient information.
 
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+**Request Handling**:
 
-#### C. Install Dependencies
+- **Authentication**: Credentials are sent via `FormData` in a POST request.
+- **Media Upload**: Media files are converted from Data URLs to `Blob` objects and sent using `FormData` in a POST request with the access token in the header for authorization.
 
-```bash
-pip install -r requirements.txt
-```
+### Error Handling and Feedback
 
-#### D. Configure Environment Variables
+The extension provides comprehensive feedback to users:
 
-Create a `.env` file in the `fastapi-server` directory with the following content:
+- **Form Validation**: Ensures that all required fields are filled before submission.
+- **Error Alerts**: Displays alerts for failed operations such as authentication errors, upload failures, or network issues.
+- **Loading Indicators**: A spinner is displayed during asynchronous operations like login and media upload to indicate ongoing processes.
 
-```bash
-AWS_ACCESS_KEY_ID=your-aws-access-key-id
-AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
-AWS_REGION=your-aws-region
-AWS_BUCKET_NAME=your-s3-bucket-name
-STRAPI_API_URL=http://localhost:1337
-STRAPI_API_TOKEN=your-strapi-api-token
-```
 
-**Important**: Replace the placeholders with your actual AWS and Strapi configurations.
-
-#### E. Review and Update `main.py`
-
-Ensure that `main.py` contains the correct configurations and endpoints.
-
-#### F. Run the FastAPI Server
-
-```bash
-uvicorn main:app --reload
-```
-
-The server should be running on `http://127.0.0.1:8000`.
-
-### 4. Configuring AWS S3
-
-#### A. Create an S3 Bucket
-
-1. Log in to the [AWS Management Console](https://console.aws.amazon.com/).
-2. Navigate to **S3** and click **Create bucket**.
-3. Provide a unique bucket name and select the desired region.
-4. Disable **Block all public access** if you want the images to be publicly accessible.
-5. Click **Create bucket**.
-
-#### B. Configure Bucket Policy for Public Access (Optional)
-
-If you want the uploaded images to be publicly accessible:
-
-1. Go to your bucket's **Permissions** tab.
-2. Under **Bucket policy**, add:
-
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Sid": "PublicReadGetObject",
-         "Effect": "Allow",
-         "Principal": "*",
-         "Action": "s3:GetObject",
-         "Resource": "arn:aws:s3:::your-s3-bucket-name/*"
-       }
-     ]
-   }
-   ```
-
-3. Save the policy.
-
-#### C. AWS IAM Configuration
-
-Ensure your AWS IAM user has permissions to upload objects to the S3 bucket. Attach a policy like:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AllowS3Upload",
-      "Effect": "Allow",
-      "Action": ["s3:PutObject"],
-      "Resource": ["arn:aws:s3:::your-s3-bucket-name/*"]
-    }
-  ]
-}
-```
-
-### 5. Setting Up Strapi CMS
-
-#### A. Install Strapi
-
-```bash
-npx create-strapi-app strapi-cms --quickstart
-```
-
-#### B. Start Strapi
-
-```bash
-cd strapi-cms
-npm run develop
-```
-
-Strapi should now be running at `http://localhost:1337`.
-
-#### C. Create an Admin User
-
-- Open `http://localhost:1337/admin` in your browser.
-- Follow the prompts to create an admin user.
-
-#### D. Create a Collection Type
-
-1. In the Strapi admin panel, navigate to **Content-Type Builder**.
-2. Click **Create new collection type** and name it **Screenshot**.
-3. Add the following fields:
-   - **image_url**: Text field (required).
-   - **description**: Rich Text or Text field.
-4. Save and allow Strapi to restart.
-
-#### E. Generate an API Token
-
-1. Navigate to **Settings** > **API Tokens**.
-2. Click **Create new API Token**.
-3. Name the token and select **Custom** token type.
-4. Under **Permissions**, select the **Screenshot** content type and enable the **Create** operation.
-5. Save and copy the API token.
-
-#### F. Update `.env` File with Strapi Config
-
-Add the following lines to your `.env` file in the `fastapi-server` directory:
-
-```bash
-STRAPI_API_URL=http://localhost:1337
-STRAPI_API_TOKEN=your-strapi-api-token
-```
-
----
-
-## Running the Application
-
-1. **Start the FastAPI Server**:
-
-   ```bash
-   uvicorn main:app --reload
-   ```
-
-2. **Ensure Strapi CMS is Running**:
-
-   ```bash
-   cd strapi-cms
-   npm run develop
-   ```
-
-3. **Load and Use the Chrome Extension**:
-
-   - Open Chrome and click on the extension icon.
-   - Enter a description in the provided textarea.
-   - Click **"Take Screenshot"**.
-   - The screenshot and description will be sent to the FastAPI server.
-
-4. **Verify Uploads**:
-
-   - **AWS S3**: Check your S3 bucket to confirm that the image has been uploaded.
-   - **Strapi CMS**: In the Strapi admin panel, navigate to **Content Manager** and verify that the new entry exists with the image URL and description.
-
----
-
-## Security Considerations
-
-- **AWS Credentials**:
-  - **Do Not Hardcode**: Never hardcode AWS credentials in your code.
-  - **Environment Variables**: Use environment variables to store sensitive information.
-  - **Permissions**: Grant the minimum required permissions to your AWS IAM user.
-
-- **Strapi API Token**:
-  - Treat your Strapi API token as a secret.
-  - Store it securely in environment variables.
-
-- **CORS Configuration**:
-  - Limit `allow_origins` in `main.py` to trusted sources.
-  - Example:
-
-    ```python
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["chrome-extension://your-extension-id"],
-        allow_credentials=True,
-        allow_methods=["POST"],
-        allow_headers=["*"],
-    )
-    ```
-
-- **Data Validation**:
-  - Validate and sanitize user inputs to prevent security vulnerabilities.
-
-- **HTTPS**:
-  - Consider using HTTPS for the FastAPI server and Strapi CMS in production environments.
-
----
-
-## Additional Recommendations
-
-- **Error Handling**:
-  - Implement comprehensive error handling in both the client and server to aid in debugging and provide better user experience.
-
-- **Logging**:
-  - Add logging to the FastAPI server to monitor requests and identify issues.
-
-- **Extension Permissions**:
-  - Review the permissions requested in `manifest.json` and ensure they are necessary.
-
-- **Testing**:
-  - Write unit and integration tests for the FastAPI server.
-
-- **Scalability**:
-  - Consider deploying the FastAPI server and Strapi CMS using services like AWS EC2, Heroku, or Docker containers for scalability.
-
-- **Media Management in Strapi** (Optional):
-  - If desired, configure Strapi's Media Library to use AWS S3 for centralized media management.
-
----
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-**Disclaimer**: Ensure that you comply with all applicable laws and regulations when capturing and uploading screenshots, especially regarding user privacy and data protection.
