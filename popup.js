@@ -4,41 +4,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const loginButton = document.getElementById('login-btn');
+  const showPasswordCheckbox = document.getElementById('show-password'); // Show Password Checkbox
 
   const uploadForm = document.getElementById('upload-form');
   const logoutButton = document.getElementById('logout-btn');
   const mediaDropZone = document.getElementById('media-drop-zone');
   const uploadButton = document.getElementById('upload-btn');
   const loader = document.getElementById('loader');
+  const recipientSelect = document.getElementById('recipient');
 
   let clipboardDataUrl = null;
   let mediaType = null; // 'image' or 'video'
   let accessToken = null;
-
-  // Recipient names (No email or phone integration)
-  const recipientNames = [
-    "Ronit",
-    "Kapil",
-    "Yash",
-    "Saurabh",
-    "Sandeep Yadav",
-    "Shubham Sachdeva",
-    "Piyush Suneja",
-    "Yash Kumar Pal",
-    "Kapil Sharma",
-    "Arun Kumar",
-    "Rohan Thakur",
-    "Subhashish Behera",
-    "Boby",
-    "Ankita Singh",
-    "CP Dhaundiyal",
-    "Sajal",
-    "Ryan",
-    "Karan Grover",
-    "Karan Sachdeva",
-    "Vikas Singh",
-    "None"
-  ];
 
   // FastAPI Endpoint (Replace with your actual FastAPI upload endpoint)
   const FASTAPI_UPLOAD_ENDPOINT = 'https://bugapi.tripxap.com/upload'; // e.g., 'https://api.yourdomain.com/upload'
@@ -47,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
   accessToken = localStorage.getItem('accessToken');
   if (accessToken) {
     showUploadForm();
+    fetchRegisteredUsers();
   } else {
     showLoginForm();
   }
@@ -64,6 +42,15 @@ document.addEventListener('DOMContentLoaded', function() {
     showLoader(); // Show loader during login
 
     loginUser(email, password);
+  });
+
+  // Event listener for Show Password checkbox
+  showPasswordCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+      passwordInput.type = 'text';
+    } else {
+      passwordInput.type = 'password';
+    }
   });
 
   function loginUser(email, password) {
@@ -88,6 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.setItem('accessToken', accessToken);
       hideLoader(); // Hide loader after successful login
       showUploadForm();
+      fetchRegisteredUsers(); // Fetch users after login
     })
     .catch(error => {
       console.error('Login Error:', error);
@@ -123,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('accessToken');
         accessToken = null;
         showLoginForm();
+        resetRecipientDropdown();
       } else {
         throw new Error('Logout failed');
       }
@@ -132,7 +121,55 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.removeItem('accessToken');
       accessToken = null;
       showLoginForm();
+      resetRecipientDropdown();
     });
+  }
+
+  // Fetch registered users from FastAPI
+  function fetchRegisteredUsers() {
+    fetch('https://bugapi.tripxap.com/users', { // Replace with your FastAPI /users endpoint if different
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      return response.json();
+    })
+    .then(userList => {
+      populateRecipientDropdown(userList);
+    })
+    .catch(error => {
+      console.error('Fetch Users Error:', error);
+      alert('Failed to fetch registered users.');
+    });
+  }
+
+  // Populate the recipient dropdown with fetched users
+  function populateRecipientDropdown(users) {
+    // Clear existing options except the first one ("Select a recipient") and "None"
+    while (recipientSelect.options.length > 2) { // Assuming first option is prompt and second is "None"
+      recipientSelect.remove(2);
+    }
+
+    // Add users to the dropdown
+    users.forEach(userName => {
+      const option = document.createElement('option');
+      option.value = userName;
+      option.text = userName;
+      recipientSelect.add(option);
+    });
+  }
+
+  // Reset recipient dropdown to default state
+  function resetRecipientDropdown() {
+    // Remove all options except the first one ("Select a recipient") and "None"
+    while (recipientSelect.options.length > 2) { // Assuming first option is prompt and second is "None"
+      recipientSelect.remove(2);
+    }
   }
 
   // Drag and Drop Functionality
@@ -226,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Upload the pasted or dropped media, description, and recipient
   uploadButton.addEventListener('click', function() {
     const description = document.getElementById('description').value.trim();
-    const recipientName = document.getElementById('recipient').value;
+    const recipientName = recipientSelect.value;
 
     if (!clipboardDataUrl) {
       alert('Please paste or drop an image or video before uploading.');
@@ -298,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     mediaType = null;
     mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
     document.getElementById('description').value = '';
-    document.getElementById('recipient').selectedIndex = 0;
+    recipientSelect.selectedIndex = 0;
   }
 
   // Loader control functions
@@ -310,3 +347,4 @@ document.addEventListener('DOMContentLoaded', function() {
     loader.style.display = 'none';
   }
 });
+
