@@ -347,4 +347,3 @@ document.addEventListener('DOMContentLoaded', function() {
     loader.style.display = 'none';
   }
 });
-
