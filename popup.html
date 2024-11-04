@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Upload Media</title>
+  <title>Bugs Report RZ</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      width: 400px;
+      width: 450px;
       padding: 10px;
       box-sizing: border-box;
       margin: 0;
@@ -18,52 +18,20 @@
       margin-bottom: 20px;
     }
 
-    #logout-btn {
-      padding: 5px 10px;
-      background-color: #f44336;
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4285F4;
       color: white;
       border: none;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       border-radius: 4px;
-      margin-bottom: 20px;
-      align-self: center;
-    }
-
-    #logout-btn:hover {
-      background-color: #d32f2f;
-    }
-
-    #media-drop-zone {
-      width: 100%;
-      max-width: 780px;
-      height: 300px;
-      border: 2px dashed #ccc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: #aaa;
       margin-bottom: 10px;
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      position: relative;
-      transition: background-color 0.3s;
-      cursor: pointer;
-      border-radius: 4px;
     }
 
-    #media-drop-zone.highlight {
-      border-color: #4285F4;
-      background-color: #f0f8ff;
-    }
-
-    #media-drop-zone video,
-    #media-drop-zone img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 4px;
+    button:hover {
+      background-color: #357AE8;
     }
 
     input, textarea, select {
@@ -74,29 +42,6 @@
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 4px;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #4285F4;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 4px;
-    }
-
-    button:hover {
-      background-color: #357AE8;
-    }
-
-    #upload-form {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 10px;
-      position: relative;
     }
 
     label {
@@ -153,6 +98,65 @@
       cursor: pointer;
       line-height: 1.5;
     }
+
+    /* Form Containers */
+    .form-container {
+      display: none;
+    }
+
+    .form-container.active {
+      display: block;
+    }
+
+    /* Logout Button */
+    #logout-btn {
+      padding: 5px 10px;
+      background-color: #f44336;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      align-self: center;
+    }
+
+    #logout-btn:hover {
+      background-color: #d32f2f;
+    }
+
+    /* Media Drop Zone */
+    #media-drop-zone {
+      width: 100%;
+      max-width: 780px;
+      height: 300px;
+      border: 2px dashed #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 10px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      position: relative;
+      transition: background-color 0.3s;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    #media-drop-zone.highlight {
+      border-color: #4285F4;
+      background-color: #f0f8ff;
+    }
+
+    #media-drop-zone video,
+    #media-drop-zone img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -163,22 +167,47 @@
   </div>
 
   <!-- Login Form -->
-  <div id="login-form">
+  <div id="login-form" class="form-container active">
     <h2>Login</h2>
     <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
-    
+
     <!-- Show Password Checkbox -->
     <div class="checkbox-container">
       <input type="checkbox" id="show-password">
       <label for="show-password">Show Password</label>
     </div>
-    
+
     <button id="login-btn">Login</button>
+    <button id="forgot-password-btn">Forgot Password?</button>
+  </div>
+
+  <!-- Forgot Password Form -->
+  <div id="forgot-password-form" class="form-container">
+    <h2>Forgot Password</h2>
+    <input id="forgot-email" type="email" placeholder="Enter your email">
+    <button id="send-otp-btn">Send OTP</button>
+    <button id="back-to-login-btn">Back to Login</button>
+  </div>
+
+  <!-- OTP Verification Form -->
+  <div id="otp-verification-form" class="form-container">
+    <h2>Reset Password</h2>
+    <input id="otp-input" type="text" placeholder="Enter OTP">
+    <input id="new-password" type="password" placeholder="Enter new password">
+
+    <!-- Show New Password Checkbox -->
+    <div class="checkbox-container">
+      <input type="checkbox" id="show-new-password">
+      <label for="show-new-password">Show Password</label>
+    </div>
+
+    <button id="reset-password-btn">Reset Password</button>
+    <button id="back-to-forgot-btn">Back</button>
   </div>
 
   <!-- Upload Form -->
-  <div id="upload-form" style="display: none;">
+  <div id="upload-form" class="form-container">
     <button id="logout-btn">Logout</button>
     <h2>Upload Media</h2>
     <div id="media-drop-zone">Drag and drop your media here or paste from clipboard</div>
@@ -187,10 +216,13 @@
 
     <label for="recipient">Select Recipient:</label>
     <select id="recipient">
-      <option value="">Select a recipient</option>
-      <option value="None">None</option>
+      <!-- <option value="">Select a recipient</option> -->
+      <option value="None" selected>None</option> <!-- 'None' is selected by default -->
     </select>
     <button id="upload-btn">Upload Media</button>
+
+    <!-- "Go to Dashboard" Button -->
+    <button id="dashboard-btn">Go to Dashboard</button>
   </div>
 
   <script src="popup.js"></script>

@@ -4,7 +4,20 @@ document.addEventListener('DOMContentLoaded', function() {
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const loginButton = document.getElementById('login-btn');
-  const showPasswordCheckbox = document.getElementById('show-password'); // Show Password Checkbox
+  const showPasswordCheckbox = document.getElementById('show-password');
+
+  const forgotPasswordButton = document.getElementById('forgot-password-btn');
+  const forgotPasswordForm = document.getElementById('forgot-password-form');
+  const forgotEmailInput = document.getElementById('forgot-email');
+  const sendOtpButton = document.getElementById('send-otp-btn');
+  const backToLoginButton = document.getElementById('back-to-login-btn');
+
+  const otpVerificationForm = document.getElementById('otp-verification-form');
+  const otpInput = document.getElementById('otp-input');
+  const newPasswordInput = document.getElementById('new-password');
+  const showNewPasswordCheckbox = document.getElementById('show-new-password');
+  const resetPasswordButton = document.getElementById('reset-password-btn');
+  const backToForgotButton = document.getElementById('back-to-forgot-btn');
 
   const uploadForm = document.getElementById('upload-form');
   const logoutButton = document.getElementById('logout-btn');
@@ -12,24 +25,27 @@ document.addEventListener('DOMContentLoaded', function() {
   const uploadButton = document.getElementById('upload-btn');
   const loader = document.getElementById('loader');
   const recipientSelect = document.getElementById('recipient');
+  const descriptionInput = document.getElementById('description');
+  const dashboardButton = document.getElementById('dashboard-btn'); // Dashboard button
 
   let clipboardDataUrl = null;
   let mediaType = null; // 'image' or 'video'
   let accessToken = null;
+  let resetEmail = null; // Stores email during password reset flow
 
-  // FastAPI Endpoint (Replace with your actual FastAPI upload endpoint)
-  const FASTAPI_UPLOAD_ENDPOINT = 'https://bugapi.tripxap.com/upload'; // e.g., 'https://api.yourdomain.com/upload'
+  // FastAPI Endpoint (Replace with your actual FastAPI backend URL)
+  const API_BASE_URL = 'https://bugapi.tripxap.com';
 
   // Check if user is already logged in
   accessToken = localStorage.getItem('accessToken');
   if (accessToken) {
-    showUploadForm();
+    showForm(uploadForm);
     fetchRegisteredUsers();
   } else {
-    showLoginForm();
+    showForm(loginForm);
   }
 
-  // Event listener for login button
+  // Event Listeners for Login Form
   loginButton.addEventListener('click', function() {
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
@@ -39,26 +55,86 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    showLoader(); // Show loader during login
-
+    showLoader();
     loginUser(email, password);
   });
 
-  // Event listener for Show Password checkbox
   showPasswordCheckbox.addEventListener('change', function() {
-    if (this.checked) {
-      passwordInput.type = 'text';
-    } else {
-      passwordInput.type = 'password';
-    }
+    passwordInput.type = this.checked ? 'text' : 'password';
   });
+
+  // Event Listener for Forgot Password Button
+  forgotPasswordButton.addEventListener('click', function() {
+    showForm(forgotPasswordForm);
+  });
+
+  // Event Listeners for Forgot Password Form
+  sendOtpButton.addEventListener('click', handleSendOtp);
+  backToLoginButton.addEventListener('click', function() {
+    showForm(loginForm);
+  });
+
+  // Event Listeners for OTP Verification Form
+  resetPasswordButton.addEventListener('click', handleResetPassword);
+  backToForgotButton.addEventListener('click', function() {
+    showForm(forgotPasswordForm);
+  });
+
+  showNewPasswordCheckbox.addEventListener('change', function() {
+    newPasswordInput.type = this.checked ? 'text' : 'password';
+  });
+
+  // Logout functionality
+  logoutButton.addEventListener('click', function() {
+    logoutUser();
+  });
+
+  // Event Listener for Dashboard Button
+  dashboardButton.addEventListener('click', function() {
+    chrome.tabs.create({ url: 'https://exquisite-tarsier-27371d.netlify.app/' });
+  });
+
+  // Event Listeners for Media Upload
+  uploadButton.addEventListener('click', handleUpload);
+
+  // Drag and Drop Functionality
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    mediaDropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  mediaDropZone.addEventListener('dragenter', () => mediaDropZone.classList.add('highlight'), false);
+  mediaDropZone.addEventListener('dragover', () => mediaDropZone.classList.add('highlight'), false);
+  mediaDropZone.addEventListener('dragleave', () => mediaDropZone.classList.remove('highlight'), false);
+  mediaDropZone.addEventListener('drop', () => mediaDropZone.classList.remove('highlight'), false);
+
+  mediaDropZone.addEventListener('drop', handleDrop, false);
+
+  // Clipboard Paste Functionality
+  document.addEventListener('paste', handlePaste);
+
+  // Functions
+
+  function showForm(form) {
+    // Hide all forms
+    [loginForm, forgotPasswordForm, otpVerificationForm, uploadForm].forEach(f => f.classList.remove('active'));
+    // Show the selected form
+    form.classList.add('active');
+  }
+
+  function showLoader() {
+    loader.style.display = 'flex';
+  }
+
+  function hideLoader() {
+    loader.style.display = 'none';
+  }
 
   function loginUser(email, password) {
     const formData = new FormData();
     formData.append('username', email);
     formData.append('password', password);
 
-    fetch('https://bugapi.tripxap.com/login', { // Replace with your FastAPI login endpoint if different
+    fetch(`${API_BASE_URL}/login`, {
       method: 'POST',
       body: formData
     })
@@ -73,61 +149,41 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(data => {
       accessToken = data.access_token;
       localStorage.setItem('accessToken', accessToken);
-      hideLoader(); // Hide loader after successful login
-      showUploadForm();
-      fetchRegisteredUsers(); // Fetch users after login
+      hideLoader();
+      showForm(uploadForm);
+      fetchRegisteredUsers();
     })
     .catch(error => {
       console.error('Login Error:', error);
-      hideLoader(); // Hide loader on error
+      hideLoader();
       alert('Login failed: ' + error.message);
     });
   }
 
-  function showLoginForm() {
-    loginForm.style.display = 'block';
-    uploadForm.style.display = 'none';
-  }
-
-  function showUploadForm() {
-    loginForm.style.display = 'none';
-    uploadForm.style.display = 'block';
-  }
-
-  // Logout functionality
-  logoutButton.addEventListener('click', function() {
-    logoutUser();
-  });
-
   function logoutUser() {
-    fetch('https://bugapi.tripxap.com/logout', { // Replace with your FastAPI logout endpoint if different
+    fetch(`${API_BASE_URL}/logout`, {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + accessToken
       }
     })
     .then(response => {
-      if (response.ok) {
-        localStorage.removeItem('accessToken');
-        accessToken = null;
-        showLoginForm();
-        resetRecipientDropdown();
-      } else {
-        throw new Error('Logout failed');
-      }
+      localStorage.removeItem('accessToken');
+      accessToken = null;
+      showForm(loginForm);
+      resetRecipientDropdown();
     })
     .catch(error => {
       console.error('Logout Error:', error);
       localStorage.removeItem('accessToken');
       accessToken = null;
-      showLoginForm();
+      showForm(loginForm);
       resetRecipientDropdown();
     });
   }
 
-  // Fetch registered users from FastAPI
   function fetchRegisteredUsers() {
-    fetch('https://bugapi.tripxap.com/users', { // Replace with your FastAPI /users endpoint if different
+    fetch(`${API_BASE_URL}/users`, {
       method: 'GET',
       headers: {
         'Authorization': 'Bearer ' + accessToken
@@ -148,49 +204,150 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Populate the recipient dropdown with fetched users
   function populateRecipientDropdown(users) {
-    // Clear existing options except the first one ("Select a recipient") and "None"
-    while (recipientSelect.options.length > 2) { // Assuming first option is prompt and second is "None"
+    // Clear existing options except the first two
+    while (recipientSelect.options.length > 2) {
       recipientSelect.remove(2);
     }
-
-    // Add users to the dropdown
     users.forEach(userName => {
       const option = document.createElement('option');
       option.value = userName;
       option.text = userName;
       recipientSelect.add(option);
     });
+    // Ensure 'None' remains selected after populating
+    recipientSelect.value = "None";
   }
 
-  // Reset recipient dropdown to default state
   function resetRecipientDropdown() {
-    // Remove all options except the first one ("Select a recipient") and "None"
-    while (recipientSelect.options.length > 2) { // Assuming first option is prompt and second is "None"
+    // Remove all options except the first two
+    while (recipientSelect.options.length > 2) {
       recipientSelect.remove(2);
     }
+    // Set recipient to 'None' by default
+    recipientSelect.value = "None";
   }
 
-  // Drag and Drop Functionality
-  // Prevent default drag behaviors
-  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    mediaDropZone.addEventListener(eventName, preventDefaults, false);
-  });
+  function handleSendOtp() {
+    const email = forgotEmailInput.value.trim();
+    if (!email) {
+      alert('Please enter your email.');
+      return;
+    }
+    showLoader();
+    const formData = new FormData();
+    formData.append('email', email);
 
-  function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
+    fetch(`${API_BASE_URL}/forgot_password`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      hideLoader();
+      alert(data.message);
+      if (data.message.includes('OTP')) {
+        resetEmail = email; // Store the email for use in reset
+        showForm(otpVerificationForm);
+      }
+    })
+    .catch(error => {
+      console.error('Error sending OTP:', error);
+      hideLoader();
+      alert('Error sending OTP. Please try again.');
+    });
   }
 
-  // Highlight drop area when item is dragged over it
-  mediaDropZone.addEventListener('dragenter', () => mediaDropZone.classList.add('highlight'), false);
-  mediaDropZone.addEventListener('dragover', () => mediaDropZone.classList.add('highlight'), false);
-  mediaDropZone.addEventListener('dragleave', () => mediaDropZone.classList.remove('highlight'), false);
-  mediaDropZone.addEventListener('drop', () => mediaDropZone.classList.remove('highlight'), false);
+  function handleResetPassword() {
+    const otp = otpInput.value.trim();
+    const newPassword = newPasswordInput.value.trim();
+    if (!otp || !newPassword) {
+      alert('Please enter the OTP and new password.');
+      return;
+    }
+    showLoader();
+    const formData = new FormData();
+    formData.append('email', resetEmail);
+    formData.append('otp', otp);
+    formData.append('new_password', newPassword);
 
-  // Handle dropped files
-  mediaDropZone.addEventListener('drop', handleDrop, false);
+    fetch(`${API_BASE_URL}/reset_password`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.detail || 'Reset password failed');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      hideLoader();
+      alert(data.message);
+      showForm(loginForm);
+    })
+    .catch(error => {
+      console.error('Error resetting password:', error);
+      hideLoader();
+      alert('Error resetting password: ' + error.message);
+    });
+  }
+
+  function handleUpload() {
+    const description = descriptionInput.value.trim();
+    const recipientName = recipientSelect.value;
+
+    if (!clipboardDataUrl) {
+      alert('Please paste or drop an image or video before uploading.');
+      return;
+    }
+
+    if (!recipientName) {
+      alert('Please select a recipient.');
+      return;
+    }
+
+    showLoader();
+
+    uploadToServer(clipboardDataUrl, description, recipientName, mediaType)
+      .then(responseData => {
+        hideLoader();
+        alert('Media and description uploaded successfully.');
+        resetForm();
+      })
+      .catch(error => {
+        console.error('Upload Error:', error);
+        hideLoader();
+        alert('Error uploading media: ' + error.message);
+      });
+  }
+
+  function uploadToServer(dataUrl, description, recipientName, type) {
+    const blob = dataURLtoBlob(dataUrl);
+
+    const formData = new FormData();
+    formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
+    formData.append('description', description);
+    formData.append('recipient_name', recipientName !== "None" ? recipientName : null);
+
+    return fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      },
+      body: formData
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.detail || 'Upload failed');
+        });
+      }
+      return response.json();
+    });
+  }
 
   function handleDrop(e) {
     const dt = e.dataTransfer;
@@ -216,8 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Copy-Paste Functionality
-  document.addEventListener('paste', (event) => {
+  function handlePaste(event) {
     const items = (event.clipboardData || event.originalEvent.clipboardData).items;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
@@ -243,11 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
       }
     }
-  });
+  }
 
-  // Function to display media preview
   function displayMediaPreview(dataUrl, type) {
-    mediaDropZone.innerHTML = ''; // Clear previous content
+    mediaDropZone.innerHTML = '';
     if (type === 'image') {
       const img = document.createElement('img');
       img.src = dataUrl;
@@ -260,62 +415,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Upload the pasted or dropped media, description, and recipient
-  uploadButton.addEventListener('click', function() {
-    const description = document.getElementById('description').value.trim();
-    const recipientName = recipientSelect.value;
-
-    if (!clipboardDataUrl) {
-      alert('Please paste or drop an image or video before uploading.');
-      return;
-    }
-
-    if (!recipientName) {
-      alert('Please select a recipient.');
-      return;
-    }
-
-    showLoader(); // Show loader during upload
-
-    uploadToServer(clipboardDataUrl, description, recipientName, mediaType)
-      .then(responseData => {
-        hideLoader(); // Hide loader after upload completes
-        alert('Media and description uploaded successfully.');
-        resetForm();
-      })
-      .catch(error => {
-        console.error('Upload Error:', error);
-        hideLoader(); // Hide loader on error
-        alert('Error uploading media: ' + error.message);
-      });
-  });
-
-  function uploadToServer(dataUrl, description, recipientName, type) {
-    const blob = dataURLtoBlob(dataUrl);
-
-    const formData = new FormData();
-    formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
-    formData.append('description', description);
-    formData.append('recipient_name', recipientName !== "None" ? recipientName : null);
-
-    return fetch(FASTAPI_UPLOAD_ENDPOINT, { // Ensure CORS is handled on the FastAPI server
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + accessToken // If your FastAPI endpoint requires authentication
-      },
-      body: formData
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(data => {
-          throw new Error(data.detail || 'Upload failed');
-        });
-      }
-      return response.json();
-    });
+  function resetForm() {
+    clipboardDataUrl = null;
+    mediaType = null;
+    mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
+    descriptionInput.value = '';
+    recipientSelect.value = "None"; // Set recipient to 'None' by default
   }
 
-  // Helper function to convert dataURL to Blob
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   function dataURLtoBlob(dataUrl) {
     const arr = dataUrl.split(',');
     const mimeMatch = arr[0].match(/:(.*?);/);
@@ -327,23 +439,5 @@ document.addEventListener('DOMContentLoaded', function() {
       u8arr[n] = bstr.charCodeAt(n);
     }
     return new Blob([u8arr], { type: mime });
-  }
-
-  // Reset the form after successful upload
-  function resetForm() {
-    clipboardDataUrl = null;
-    mediaType = null;
-    mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
-    document.getElementById('description').value = '';
-    recipientSelect.selectedIndex = 0;
-  }
-
-  // Loader control functions
-  function showLoader() {
-    loader.style.display = 'flex';
-  }
-
-  function hideLoader() {
-    loader.style.display = 'none';
   }
 });
