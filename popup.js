@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const loader = document.getElementById('loader');
   const recipientSelect = document.getElementById('recipient');
   const descriptionInput = document.getElementById('description');
-  const dashboardButton = document.getElementById('dashboard-btn'); // Dashboard button
+  const dashboardButton = document.getElementById('dashboard-btn');
+  const currentUrlInput = document.getElementById('current-url');
+  const projectSelect = document.getElementById('project'); // Project dropdown
+  const prioritySelect = document.getElementById('priority'); // Priority dropdown
 
   let clipboardDataUrl = null;
   let mediaType = null; // 'image' or 'video'
@@ -41,6 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (accessToken) {
     showForm(uploadForm);
     fetchRegisteredUsers();
+    fetchProjects();
+    fetchCurrentTabUrl();
   } else {
     showForm(loginForm);
   }
@@ -119,6 +124,13 @@ document.addEventListener('DOMContentLoaded', function() {
     [loginForm, forgotPasswordForm, otpVerificationForm, uploadForm].forEach(f => f.classList.remove('active'));
     // Show the selected form
     form.classList.add('active');
+
+    // If showing the upload form, fetch the current tab's URL, users, and projects
+    if (form === uploadForm) {
+      fetchCurrentTabUrl();
+      fetchRegisteredUsers();
+      fetchProjects();
+    }
   }
 
   function showLoader() {
@@ -152,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideLoader();
       showForm(uploadForm);
       fetchRegisteredUsers();
+      fetchProjects();
     })
     .catch(error => {
       console.error('Login Error:', error);
@@ -168,17 +181,28 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })
     .then(response => {
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+      return response.json();
+    })
+    .then(data => {
       localStorage.removeItem('accessToken');
       accessToken = null;
       showForm(loginForm);
       resetRecipientDropdown();
+      resetProjectDropdown();
+      resetForm();
     })
     .catch(error => {
       console.error('Logout Error:', error);
+      // Even if logout fails, proceed to remove the token and show login form
       localStorage.removeItem('accessToken');
       accessToken = null;
       showForm(loginForm);
       resetRecipientDropdown();
+      resetProjectDropdown();
+      resetForm();
     });
   }
 
@@ -205,9 +229,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function populateRecipientDropdown(users) {
-    // Clear existing options except the first two
-    while (recipientSelect.options.length > 2) {
-      recipientSelect.remove(2);
+    // Clear existing options except the first one ('None')
+    while (recipientSelect.options.length > 1) { // Assuming 'None' is the first option
+      recipientSelect.remove(1);
     }
     users.forEach(userName => {
       const option = document.createElement('option');
@@ -220,12 +244,69 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function resetRecipientDropdown() {
-    // Remove all options except the first two
-    while (recipientSelect.options.length > 2) {
-      recipientSelect.remove(2);
+    // Remove all options except the first one ('None')
+    while (recipientSelect.options.length > 1) { // Assuming 'None' is the first option
+      recipientSelect.remove(1);
     }
     // Set recipient to 'None' by default
     recipientSelect.value = "None";
+  }
+
+  function fetchProjects() {
+    fetch(`${API_BASE_URL}/projects`, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      return response.json();
+    })
+    .then(projectList => {
+      populateProjectDropdown(projectList);
+    })
+    .catch(error => {
+      console.error('Fetch Projects Error:', error);
+      alert('Failed to fetch projects.');
+    });
+  }
+
+  function populateProjectDropdown(projects) {
+    // Clear existing options
+    while (projectSelect.options.length > 0) {
+      projectSelect.remove(0);
+    }
+
+    projects.forEach(project => {
+      const option = document.createElement('option');
+      option.value = project.id; // Use project ID as value
+      option.text = project.name;
+      projectSelect.add(option);
+    });
+
+    // Set default selected project to "web"
+    const defaultProjectOption = Array.from(projectSelect.options).find(option => option.text.toLowerCase() === 'web');
+    if (defaultProjectOption) {
+      defaultProjectOption.selected = true;
+    } else {
+      // If "web" is not in the list, select the first project
+      projectSelect.selectedIndex = 0;
+    }
+  }
+
+  function resetProjectDropdown() {
+    while (projectSelect.options.length > 0) {
+      projectSelect.remove(0);
+    }
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = "";
+    placeholderOption.text = "Loading projects...";
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    projectSelect.add(placeholderOption);
   }
 
   function handleSendOtp() {
@@ -246,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(data => {
       hideLoader();
       alert(data.message);
-      if (data.message.includes('OTP')) {
+      if (data.message.toLowerCase().includes('otp')) {
         resetEmail = email; // Store the email for use in reset
         showForm(otpVerificationForm);
       }
@@ -298,6 +379,9 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleUpload() {
     const description = descriptionInput.value.trim();
     const recipientName = recipientSelect.value;
+    const currentUrl = currentUrlInput.value.trim();
+    const projectId = projectSelect.value; // Get the selected project ID
+    const priority = prioritySelect.value; // Get the selected priority
 
     if (!clipboardDataUrl) {
       alert('Please paste or drop an image or video before uploading.');
@@ -309,9 +393,27 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    if (!projectId) {
+      alert('Please select a project.');
+      return;
+    }
+
+    if (!priority) {
+      alert('Please select a priority.');
+      return;
+    }
+
+    if (!currentUrl || currentUrl === 'URL not available') {
+      alert('Current tab URL is not available.');
+      return;
+    }
+
     showLoader();
 
-    uploadToServer(clipboardDataUrl, description, recipientName, mediaType)
+    // Combine URL and description
+    const combinedDescription = `\n\nURL: ${currentUrl}\n\nContext: ${description}`;
+
+    uploadToServer(clipboardDataUrl, combinedDescription, recipientName, mediaType, projectId, priority)
       .then(responseData => {
         hideLoader();
         alert('Media and description uploaded successfully.');
@@ -324,13 +426,15 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
-  function uploadToServer(dataUrl, description, recipientName, type) {
+  function uploadToServer(dataUrl, description, recipientName, type, projectId, priority) {
     const blob = dataURLtoBlob(dataUrl);
 
     const formData = new FormData();
     formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
     formData.append('description', description);
-    formData.append('recipient_name', recipientName !== "None" ? recipientName : null);
+    formData.append('recipient_name', recipientName !== "None" ? recipientName : '');
+    formData.append('project_id', projectId); // Include project ID
+    formData.append('severity', priority); // Include priority (severity)
 
     return fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
@@ -421,6 +525,10 @@ document.addEventListener('DOMContentLoaded', function() {
     mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
     descriptionInput.value = '';
     recipientSelect.value = "None"; // Set recipient to 'None' by default
+    currentUrlInput.value = ''; // Clear the current URL
+    projectSelect.selectedIndex = 0; // Reset project selection
+    prioritySelect.value = 'low'; // Reset priority to 'low'
+    fetchCurrentTabUrl(); // Fetch the URL again if needed
   }
 
   function preventDefaults(e) {
@@ -439,5 +547,25 @@ document.addEventListener('DOMContentLoaded', function() {
       u8arr[n] = bstr.charCodeAt(n);
     }
     return new Blob([u8arr], { type: mime });
+  }
+
+  function fetchCurrentTabUrl() {
+    // Use chrome.tabs API to get the current active tab's URL
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (chrome.runtime.lastError) {
+        console.error('Error fetching tabs:', chrome.runtime.lastError);
+        currentUrlInput.value = 'Unable to fetch URL';
+        return;
+      }
+
+      if (tabs.length === 0) {
+        currentUrlInput.value = 'Unable to fetch URL';
+        return;
+      }
+
+      const activeTab = tabs[0];
+      const url = activeTab.url || 'URL not available';
+      currentUrlInput.value = url;
+    });
   }
 });

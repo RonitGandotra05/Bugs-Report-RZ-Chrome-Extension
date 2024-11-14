@@ -157,6 +157,12 @@
       max-height: 100%;
       border-radius: 4px;
     }
+
+    /* Current URL Box Styling */
+    #current-url {
+      background-color: #f9f9f9;
+      cursor: default;
+    }
   </style>
 </head>
 <body>
@@ -211,14 +217,33 @@
     <button id="logout-btn">Logout</button>
     <h2>Upload Media</h2>
     <div id="media-drop-zone">Drag and drop your media here or paste from clipboard</div>
+    
+    <!-- Current URL Box -->
+    <label for="current-url">Current Tab URL:</label>
+    <input id="current-url" type="text" readonly placeholder="Fetching current tab URL...">
 
     <textarea id="description" placeholder="Enter description"></textarea>
 
+    <!-- Recipient Selection Dropdown -->
     <label for="recipient">Select Recipient:</label>
     <select id="recipient">
-      <!-- <option value="">Select a recipient</option> -->
-      <option value="None" selected>None</option> <!-- 'None' is selected by default -->
+      <option value="None" selected>None</option>
     </select>
+
+    <!-- Project Selection Dropdown -->
+    <label for="project">Select Project:</label>
+    <select id="project">
+      <option value="" selected disabled>Loading projects...</option>
+    </select>
+
+    <!-- Priority Selection Dropdown -->
+    <label for="priority">Select Priority:</label>
+    <select id="priority">
+      <option value="low" selected>Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
+
     <button id="upload-btn">Upload Media</button>
 
     <!-- "Go to Dashboard" Button -->
