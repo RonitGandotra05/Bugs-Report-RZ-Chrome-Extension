@@ -379,52 +379,85 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleUpload() {
     const description = descriptionInput.value.trim();
     const recipientName = recipientSelect.value;
-    const currentUrl = currentUrlInput.value.trim();
+    const currentUrl = currentUrlInput.value.trim(); // Current URL for tab_url
     const projectId = projectSelect.value; // Get the selected project ID
     const priority = prioritySelect.value; // Get the selected priority
 
     if (!clipboardDataUrl) {
-      alert('Please paste or drop an image or video before uploading.');
-      return;
+        alert('Please paste or drop an image or video before uploading.');
+        return;
     }
 
     if (!recipientName) {
-      alert('Please select a recipient.');
-      return;
+        alert('Please select a recipient.');
+        return;
     }
 
     if (!projectId) {
-      alert('Please select a project.');
-      return;
+        alert('Please select a project.');
+        return;
     }
 
     if (!priority) {
-      alert('Please select a priority.');
-      return;
+        alert('Please select a priority.');
+        return;
     }
 
     if (!currentUrl || currentUrl === 'URL not available') {
-      alert('Current tab URL is not available.');
-      return;
+        alert('Current tab URL is not available.');
+        return;
     }
 
     showLoader();
 
-    // Combine URL and description
-    const combinedDescription = `\n\nURL: ${currentUrl}\n\nContext: ${description}`;
-
-    uploadToServer(clipboardDataUrl, combinedDescription, recipientName, mediaType, projectId, priority)
-      .then(responseData => {
+    uploadToServer(
+        clipboardDataUrl,
+        description,
+        recipientName,
+        mediaType,
+        projectId,
+        priority,
+        currentUrl // Pass the tab URL separately
+    )
+    .then(responseData => {
         hideLoader();
         alert('Media and description uploaded successfully.');
         resetForm();
-      })
-      .catch(error => {
+    })
+    .catch(error => {
         console.error('Upload Error:', error);
         hideLoader();
         alert('Error uploading media: ' + error.message);
-      });
-  }
+    });
+}
+
+function uploadToServer(dataUrl, description, recipientName, type, projectId, priority, tabUrl) {
+    const blob = dataURLtoBlob(dataUrl);
+
+    const formData = new FormData();
+    formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
+    formData.append('description', description);
+    formData.append('recipient_name', recipientName !== "None" ? recipientName : '');
+    formData.append('project_id', projectId); // Include project ID
+    formData.append('severity', priority); // Include priority (severity)
+    formData.append('tab_url', tabUrl); // Add the tab URL here
+
+    return fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + accessToken
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.detail || 'Upload failed');
+            });
+        }
+        return response.json();
+    });
+}
 
   function uploadToServer(dataUrl, description, recipientName, type, projectId, priority) {
     const blob = dataURLtoBlob(dataUrl);
