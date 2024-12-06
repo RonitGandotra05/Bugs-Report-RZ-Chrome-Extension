@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Event Listeners for Login Form
   loginButton.addEventListener('click', function() {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+    // const email = emailInput.value.trim();
+    // const password = passwordInput.value.trim();
 
     if (!email || !password) {
       alert('Please enter both email and password.');
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function handleSendOtp() {
-    const email = forgotEmailInput.value.trim();
+    // const email = forgotEmailInput.value.trim();
     if (!email) {
       alert('Please enter your email.');
       return;
@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function handleResetPassword() {
-    const otp = otpInput.value.trim();
-    const newPassword = newPasswordInput.value.trim();
+    // const otp = otpInput.value.trim();
+    // const newPassword = newPasswordInput.value.trim();
     if (!otp || !newPassword) {
       alert('Please enter the OTP and new password.');
       return;
@@ -360,10 +360,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function handleUpload() {
     const description = descriptionInput.value.trim();
-    const recipientName = recipientInput.value.trim();
-    const currentUrl = currentUrlInput.value.trim();
-    const projectName = projectInput.value.trim();
-    const priority = priorityInput.value.trim();
+    // const recipientName = recipientInput.value.trim();
+    // const currentUrl = currentUrlInput.value.trim();
+    // const projectName = projectInput.value.trim();
+    // const priority = priorityInput.value.trim();
 
     if (!clipboardDataUrl) {
       alert('Please paste or drop an image or video before uploading.');
