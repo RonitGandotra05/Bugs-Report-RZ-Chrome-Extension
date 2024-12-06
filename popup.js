@@ -24,20 +24,26 @@ document.addEventListener('DOMContentLoaded', function() {
   const mediaDropZone = document.getElementById('media-drop-zone');
   const uploadButton = document.getElementById('upload-btn');
   const loader = document.getElementById('loader');
-  const recipientSelect = document.getElementById('recipient');
+  const recipientInput = document.getElementById('recipient-input');
+  const recipientList = document.getElementById('recipient-list');
   const descriptionInput = document.getElementById('description');
   const dashboardButton = document.getElementById('dashboard-btn');
   const currentUrlInput = document.getElementById('current-url');
-  const projectSelect = document.getElementById('project'); // Project dropdown
-  const prioritySelect = document.getElementById('priority'); // Priority dropdown
+  const projectInput = document.getElementById('project-input');
+  const projectList = document.getElementById('project-list');
+  const priorityInput = document.getElementById('priority-input');
+  const priorityList = document.getElementById('priority-list');
 
   let clipboardDataUrl = null;
   let mediaType = null; // 'image' or 'video'
   let accessToken = null;
   let resetEmail = null; // Stores email during password reset flow
 
-  // FastAPI Endpoint (Replace with your actual FastAPI backend URL)
+  // FastAPI Endpoint
   const API_BASE_URL = 'https://bugapi.tripxap.com';
+
+  // Set initial priority options (already in HTML, but we keep reference)
+  const priorityOptions = ['low', 'medium', 'high'];
 
   // Check if user is already logged in
   accessToken = localStorage.getItem('accessToken');
@@ -190,9 +196,9 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.removeItem('accessToken');
       accessToken = null;
       showForm(loginForm);
-      resetRecipientDropdown();
-      resetProjectDropdown();
       resetForm();
+      resetProjectDatalist(); 
+      resetRecipientDatalist();
     })
     .catch(error => {
       console.error('Logout Error:', error);
@@ -200,9 +206,9 @@ document.addEventListener('DOMContentLoaded', function() {
       localStorage.removeItem('accessToken');
       accessToken = null;
       showForm(loginForm);
-      resetRecipientDropdown();
-      resetProjectDropdown();
       resetForm();
+      resetProjectDatalist(); 
+      resetRecipientDatalist();
     });
   }
 
@@ -220,7 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.json();
     })
     .then(userList => {
-      populateRecipientDropdown(userList);
+      const usersWithNone = ['None', ...userList];
+      populateDatalist(recipientList, usersWithNone);
     })
     .catch(error => {
       console.error('Fetch Users Error:', error);
@@ -228,28 +235,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function populateRecipientDropdown(users) {
-    // Clear existing options except the first one ('None')
-    while (recipientSelect.options.length > 1) { // Assuming 'None' is the first option
-      recipientSelect.remove(1);
-    }
-    users.forEach(userName => {
+  function populateDatalist(datalistElement, items) {
+    datalistElement.innerHTML = '';
+    items.forEach(item => {
       const option = document.createElement('option');
-      option.value = userName;
-      option.text = userName;
-      recipientSelect.add(option);
+      option.value = item;
+      datalistElement.appendChild(option);
     });
-    // Ensure 'None' remains selected after populating
-    recipientSelect.value = "None";
   }
 
-  function resetRecipientDropdown() {
-    // Remove all options except the first one ('None')
-    while (recipientSelect.options.length > 1) { // Assuming 'None' is the first option
-      recipientSelect.remove(1);
-    }
-    // Set recipient to 'None' by default
-    recipientSelect.value = "None";
+  function resetRecipientDatalist() {
+    recipientList.innerHTML = '';
+    const option = document.createElement('option');
+    option.value = "None";
+    recipientList.appendChild(option);
+    recipientInput.value = 'None';
   }
 
   function fetchProjects() {
@@ -265,8 +265,16 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       return response.json();
     })
-    .then(projectList => {
-      populateProjectDropdown(projectList);
+    .then(projectListData => {
+      window.projectIdMap = {};
+      const projectNames = projectListData.map(project => {
+        window.projectIdMap[project.name] = project.id;
+        return project.name;
+      });
+
+      // Attempt to set default project to "web"
+      // We'll handle default selection in resetForm or after population
+      populateDatalist(projectList, projectNames);
     })
     .catch(error => {
       console.error('Fetch Projects Error:', error);
@@ -274,39 +282,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function populateProjectDropdown(projects) {
-    // Clear existing options
-    while (projectSelect.options.length > 0) {
-      projectSelect.remove(0);
-    }
-
-    projects.forEach(project => {
-      const option = document.createElement('option');
-      option.value = project.id; // Use project ID as value
-      option.text = project.name;
-      projectSelect.add(option);
-    });
-
-    // Set default selected project to "web"
-    const defaultProjectOption = Array.from(projectSelect.options).find(option => option.text.toLowerCase() === 'web');
-    if (defaultProjectOption) {
-      defaultProjectOption.selected = true;
-    } else {
-      // If "web" is not in the list, select the first project
-      projectSelect.selectedIndex = 0;
-    }
-  }
-
-  function resetProjectDropdown() {
-    while (projectSelect.options.length > 0) {
-      projectSelect.remove(0);
-    }
-    const placeholderOption = document.createElement('option');
-    placeholderOption.value = "";
-    placeholderOption.text = "Loading projects...";
-    placeholderOption.disabled = true;
-    placeholderOption.selected = true;
-    projectSelect.add(placeholderOption);
+  function resetProjectDatalist() {
+    projectList.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = "Loading projects...";
+    placeholder.disabled = true;
+    projectList.appendChild(placeholder);
+    projectInput.value = '';
   }
 
   function handleSendOtp() {
@@ -378,96 +360,70 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function handleUpload() {
     const description = descriptionInput.value.trim();
-    const recipientName = recipientSelect.value;
-    const currentUrl = currentUrlInput.value.trim(); // Current URL for tab_url
-    const projectId = projectSelect.value; // Get the selected project ID
-    const priority = prioritySelect.value; // Get the selected priority
+    const recipientName = recipientInput.value.trim();
+    const currentUrl = currentUrlInput.value.trim();
+    const projectName = projectInput.value.trim();
+    const priority = priorityInput.value.trim();
 
     if (!clipboardDataUrl) {
-        alert('Please paste or drop an image or video before uploading.');
-        return;
+      alert('Please paste or drop an image or video before uploading.');
+      return;
     }
 
     if (!recipientName) {
-        alert('Please select a recipient.');
-        return;
+      alert('Please select or type a recipient.');
+      return;
     }
 
-    if (!projectId) {
-        alert('Please select a project.');
-        return;
+    if (!projectName || !window.projectIdMap || !window.projectIdMap[projectName]) {
+      alert('Please select a valid project from the list.');
+      return;
     }
+    const projectId = window.projectIdMap[projectName];
 
     if (!priority) {
-        alert('Please select a priority.');
-        return;
+      alert('Please select a priority.');
+      return;
     }
 
     if (!currentUrl || currentUrl === 'URL not available') {
-        alert('Current tab URL is not available.');
-        return;
+      alert('Current tab URL is not available.');
+      return;
     }
 
     showLoader();
 
     uploadToServer(
-        clipboardDataUrl,
-        description,
-        recipientName,
-        mediaType,
-        projectId,
-        priority,
-        currentUrl // Pass the tab URL separately
+      clipboardDataUrl,
+      description,
+      recipientName !== 'None' ? recipientName : '',
+      mediaType,
+      projectId,
+      priority,
+      currentUrl
     )
     .then(responseData => {
-        hideLoader();
-        alert('Media and description uploaded successfully.');
-        resetForm();
+      hideLoader();
+      alert('Media and description uploaded successfully.');
+      resetForm();
     })
     .catch(error => {
-        console.error('Upload Error:', error);
-        hideLoader();
-        alert('Error uploading media: ' + error.message);
+      console.error('Upload Error:', error);
+      hideLoader();
+      alert('Error uploading media: ' + error.message);
     });
-}
+  }
 
-function uploadToServer(dataUrl, description, recipientName, type, projectId, priority, tabUrl) {
+  function uploadToServer(dataUrl, description, recipientName, type, projectId, priority, tabUrl) {
     const blob = dataURLtoBlob(dataUrl);
 
     const formData = new FormData();
     formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
     formData.append('description', description);
-    formData.append('recipient_name', recipientName !== "None" ? recipientName : '');
-    formData.append('project_id', projectId); // Include project ID
-    formData.append('severity', priority); // Include priority (severity)
-    formData.append('tab_url', tabUrl); // Add the tab URL here
-
-    return fetch(`${API_BASE_URL}/upload`, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + accessToken
-        },
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.detail || 'Upload failed');
-            });
-        }
-        return response.json();
-    });
-}
-
-  function uploadToServer(dataUrl, description, recipientName, type, projectId, priority) {
-    const blob = dataURLtoBlob(dataUrl);
-
-    const formData = new FormData();
-    formData.append('file', blob, type === 'image' ? 'image.png' : 'video.mp4');
-    formData.append('description', description);
-    formData.append('recipient_name', recipientName !== "None" ? recipientName : '');
-    formData.append('project_id', projectId); // Include project ID
-    formData.append('severity', priority); // Include priority (severity)
+    formData.append('recipient_name', recipientName);
+    formData.append('project_id', projectId);
+    formData.append('severity', priority);
+    formData.append('tab_url', tabUrl);
 
     return fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
@@ -557,11 +513,11 @@ function uploadToServer(dataUrl, description, recipientName, type, projectId, pr
     mediaType = null;
     mediaDropZone.innerHTML = 'Drag and drop your media here or paste from clipboard';
     descriptionInput.value = '';
-    recipientSelect.value = "None"; // Set recipient to 'None' by default
-    currentUrlInput.value = ''; // Clear the current URL
-    projectSelect.selectedIndex = 0; // Reset project selection
-    prioritySelect.value = 'low'; // Reset priority to 'low'
-    fetchCurrentTabUrl(); // Fetch the URL again if needed
+    recipientInput.value = 'None';
+    currentUrlInput.value = '';
+    projectInput.value = '';
+    priorityInput.value = 'low';
+    fetchCurrentTabUrl();
   }
 
   function preventDefaults(e) {
@@ -583,7 +539,6 @@ function uploadToServer(dataUrl, description, recipientName, type, projectId, pr
   }
 
   function fetchCurrentTabUrl() {
-    // Use chrome.tabs API to get the current active tab's URL
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       if (chrome.runtime.lastError) {
         console.error('Error fetching tabs:', chrome.runtime.lastError);

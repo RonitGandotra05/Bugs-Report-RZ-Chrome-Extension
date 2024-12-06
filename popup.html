@@ -1,255 +1,258 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Bugs Report RZ</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      width: 450px;
-      padding: 10px;
-      box-sizing: border-box;
-      margin: 0;
-      position: relative;
-    }
+<title>Bugs Report RZ</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  width: 450px;
+  padding: 10px;
+  box-sizing: border-box;
+  margin: 0;
+  position: relative;
+}
 
-    h2 {
-      text-align: center;
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
+h2 {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
 
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #4285F4;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 4px;
-      margin-bottom: 10px;
-    }
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
 
-    button:hover {
-      background-color: #357AE8;
-    }
+button:hover {
+  background-color: #357AE8;
+}
 
-    input, textarea, select {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 8px;
-      box-sizing: border-box;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
+input, textarea {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px;
+  box-sizing: border-box;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
 
-    label {
-      font-weight: bold;
-      align-self: flex-start;
-      margin-bottom: 5px;
-    }
+label {
+  font-weight: bold;
+  align-self: flex-start;
+  margin-bottom: 5px;
+}
 
-    /* Loader Styles */
-    #loader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
+/* Loader Styles */
+#loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
 
-    .spinner {
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #4285F4;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      animation: spin 1s linear infinite;
-    }
+.spinner {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #4285F4;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-    /* Show Password Checkbox Styling */
-    .checkbox-container {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-      width: 100%;
-    }
+/* Show Password Checkbox Styling */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  width: 100%;
+}
 
-    .checkbox-container input[type="checkbox"] {
-      margin-right: 8px;
-      width: auto;
-      height: auto;
-      vertical-align: middle;
-    }
+.checkbox-container input[type="checkbox"] {
+  margin-right: 8px;
+  width: auto;
+  height: auto;
+  vertical-align: middle;
+}
 
-    .checkbox-container label {
-      font-weight: normal;
-      cursor: pointer;
-      line-height: 1.5;
-    }
+.checkbox-container label {
+  font-weight: normal;
+  cursor: pointer;
+  line-height: 1.5;
+}
 
-    /* Form Containers */
-    .form-container {
-      display: none;
-    }
+/* Form Containers */
+.form-container {
+  display: none;
+}
 
-    .form-container.active {
-      display: block;
-    }
+.form-container.active {
+  display: block;
+}
 
-    /* Logout Button */
-    #logout-btn {
-      padding: 5px 10px;
-      background-color: #f44336;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      align-self: center;
-    }
+/* Logout Button */
+#logout-btn {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  align-self: center;
+}
 
-    #logout-btn:hover {
-      background-color: #d32f2f;
-    }
+#logout-btn:hover {
+  background-color: #d32f2f;
+}
 
-    /* Media Drop Zone */
-    #media-drop-zone {
-      width: 100%;
-      max-width: 780px;
-      height: 300px;
-      border: 2px dashed #ccc;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: #aaa;
-      margin-bottom: 10px;
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      position: relative;
-      transition: background-color 0.3s;
-      cursor: pointer;
-      border-radius: 4px;
-    }
+/* Media Drop Zone */
+#media-drop-zone {
+  width: 100%;
+  max-width: 780px;
+  height: 300px;
+  border: 2px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #aaa;
+  margin-bottom: 10px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  position: relative;
+  transition: background-color 0.3s;
+  cursor: pointer;
+  border-radius: 4px;
+}
 
-    #media-drop-zone.highlight {
-      border-color: #4285F4;
-      background-color: #f0f8ff;
-    }
+#media-drop-zone.highlight {
+  border-color: #4285F4;
+  background-color: #f0f8ff;
+}
 
-    #media-drop-zone video,
-    #media-drop-zone img {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 4px;
-    }
+#media-drop-zone video,
+#media-drop-zone img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+}
 
-    /* Current URL Box Styling */
-    #current-url {
-      background-color: #f9f9f9;
-      cursor: default;
-    }
-  </style>
+/* Current URL Box Styling */
+#current-url {
+  background-color: #f9f9f9;
+  cursor: default;
+}
+</style>
 </head>
 <body>
 
-  <!-- Loader -->
-  <div id="loader">
-    <div class="spinner"></div>
+<!-- Loader -->
+<div id="loader">
+  <div class="spinner"></div>
+</div>
+
+<!-- Login Form -->
+<div id="login-form" class="form-container active">
+  <h2>Login</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <!-- Show Password Checkbox -->
+  <div class="checkbox-container">
+    <input type="checkbox" id="show-password">
+    <label for="show-password">Show Password</label>
   </div>
 
-  <!-- Login Form -->
-  <div id="login-form" class="form-container active">
-    <h2>Login</h2>
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
+  <button id="login-btn">Login</button>
+  <button id="forgot-password-btn">Forgot Password?</button>
+</div>
 
-    <!-- Show Password Checkbox -->
-    <div class="checkbox-container">
-      <input type="checkbox" id="show-password">
-      <label for="show-password">Show Password</label>
-    </div>
+<!-- Forgot Password Form -->
+<div id="forgot-password-form" class="form-container">
+  <h2>Forgot Password</h2>
+  <input id="forgot-email" type="email" placeholder="Enter your email">
+  <button id="send-otp-btn">Send OTP</button>
+  <button id="back-to-login-btn">Back to Login</button>
+</div>
 
-    <button id="login-btn">Login</button>
-    <button id="forgot-password-btn">Forgot Password?</button>
+<!-- OTP Verification Form -->
+<div id="otp-verification-form" class="form-container">
+  <h2>Reset Password</h2>
+  <input id="otp-input" type="text" placeholder="Enter OTP">
+  <input id="new-password" type="password" placeholder="Enter new password">
+
+  <!-- Show New Password Checkbox -->
+  <div class="checkbox-container">
+    <input type="checkbox" id="show-new-password">
+    <label for="show-new-password">Show Password</label>
   </div>
 
-  <!-- Forgot Password Form -->
-  <div id="forgot-password-form" class="form-container">
-    <h2>Forgot Password</h2>
-    <input id="forgot-email" type="email" placeholder="Enter your email">
-    <button id="send-otp-btn">Send OTP</button>
-    <button id="back-to-login-btn">Back to Login</button>
-  </div>
+  <button id="reset-password-btn">Reset Password</button>
+  <button id="back-to-forgot-btn">Back</button>
+</div>
 
-  <!-- OTP Verification Form -->
-  <div id="otp-verification-form" class="form-container">
-    <h2>Reset Password</h2>
-    <input id="otp-input" type="text" placeholder="Enter OTP">
-    <input id="new-password" type="password" placeholder="Enter new password">
+<!-- Upload Form -->
+<div id="upload-form" class="form-container">
+  <button id="logout-btn">Logout</button>
+  <h2>Upload Media</h2>
+  <div id="media-drop-zone">Drag and drop your media here or paste from clipboard</div>
+  
+  <!-- Current URL Box -->
+  <label for="current-url">Current Tab URL:</label>
+  <input id="current-url" type="text" readonly placeholder="Fetching current tab URL...">
 
-    <!-- Show New Password Checkbox -->
-    <div class="checkbox-container">
-      <input type="checkbox" id="show-new-password">
-      <label for="show-new-password">Show Password</label>
-    </div>
+  <textarea id="description" placeholder="Enter description"></textarea>
 
-    <button id="reset-password-btn">Reset Password</button>
-    <button id="back-to-forgot-btn">Back</button>
-  </div>
+  <!-- Recipient Input + Datalist -->
+  <label for="recipient-input">Select Recipient:</label>
+  <input id="recipient-input" list="recipient-list" placeholder="Type to search recipient...">
+  <datalist id="recipient-list">
+    <option value="None">None</option>
+  </datalist>
 
-  <!-- Upload Form -->
-  <div id="upload-form" class="form-container">
-    <button id="logout-btn">Logout</button>
-    <h2>Upload Media</h2>
-    <div id="media-drop-zone">Drag and drop your media here or paste from clipboard</div>
-    
-    <!-- Current URL Box -->
-    <label for="current-url">Current Tab URL:</label>
-    <input id="current-url" type="text" readonly placeholder="Fetching current tab URL...">
+  <!-- Project Input + Datalist -->
+  <label for="project-input">Select Project:</label>
+  <input id="project-input" list="project-list" placeholder="Type to search project...">
+  <datalist id="project-list">
+    <option value="Loading projects..." disabled></option>
+  </datalist>
 
-    <textarea id="description" placeholder="Enter description"></textarea>
+  <!-- Priority Input + Datalist -->
+  <label for="priority-input">Select Priority:</label>
+  <input id="priority-input" list="priority-list" placeholder="Type to search priority...">
+  <datalist id="priority-list">
+    <option value="low">Low</option>
+    <option value="medium">Medium</option>
+    <option value="high">High</option>
+  </datalist>
 
-    <!-- Recipient Selection Dropdown -->
-    <label for="recipient">Select Recipient:</label>
-    <select id="recipient">
-      <option value="None" selected>None</option>
-    </select>
+  <button id="upload-btn">Upload Media</button>
 
-    <!-- Project Selection Dropdown -->
-    <label for="project">Select Project:</label>
-    <select id="project">
-      <option value="" selected disabled>Loading projects...</option>
-    </select>
+  <!-- "Go to Dashboard" Button -->
+  <button id="dashboard-btn">Go to Dashboard</button>
+</div>
 
-    <!-- Priority Selection Dropdown -->
-    <label for="priority">Select Priority:</label>
-    <select id="priority">
-      <option value="low" selected>Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-
-    <button id="upload-btn">Upload Media</button>
-
-    <!-- "Go to Dashboard" Button -->
-    <button id="dashboard-btn">Go to Dashboard</button>
-  </div>
-
-  <script src="popup.js"></script>
+<script src="popup.js"></script>
 </body>
 </html>
