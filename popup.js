@@ -34,6 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const priorityInput = document.getElementById('priority-input');
   const priorityList = document.getElementById('priority-list');
 
+  const ccRecipientsContainer = document.getElementById('cc-recipients-container');
+
   let clipboardDataUrl = null;
   let mediaType = null; // 'image' or 'video'
   let accessToken = null;
@@ -58,8 +60,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Event Listeners for Login Form
   loginButton.addEventListener('click', function() {
-    // const email = emailInput.value.trim();
-    // const password = passwordInput.value.trim();
+    const email = emailInput.value;
+    const password = passwordInput.value;
 
     if (!email || !password) {
       alert('Please enter both email and password.');
@@ -102,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Event Listener for Dashboard Button
   dashboardButton.addEventListener('click', function() {
-    chrome.tabs.create({ url: 'https://exquisite-tarsier-27371d.netlify.app/' });
+    chrome.tabs.create({ url: 'https://exquisite-tarsier-27371d.netlify.app/homeV2' });
   });
 
   // Event Listeners for Media Upload
@@ -122,6 +124,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Clipboard Paste Functionality
   document.addEventListener('paste', handlePaste);
+
+  // Add this function after other event listeners
+  document.querySelector('.cc-recipient-input').addEventListener('input', function(e) {
+    const input = e.target;
+    const value = input.value;
+    
+    // Get the current recipient being typed (after the last comma)
+    const lastCommaIndex = value.lastIndexOf(',');
+    const currentRecipient = lastCommaIndex >= 0 ? value.slice(lastCommaIndex + 1) : value;
+    
+    // Create a temporary input for the datalist to work with the current recipient
+    input.setAttribute('data-before', value.slice(0, lastCommaIndex + 1));
+    
+    if (value.endsWith(',')) {
+        // Split values
+        let recipients = value.split(',')
+            .filter(r => r && r !== 'None');
+        
+        // Remove duplicates
+        recipients = [...new Set(recipients)];
+        
+        // Limit to 4 recipients
+        recipients = recipients.slice(0, 4);
+        
+        // Add back the comma and a single space
+        input.value = recipients.join(',') + ', ';
+        
+        // Move cursor to the end
+        input.setSelectionRange(input.value.length, input.value.length);
+    }
+    
+    // Add keydown event listener to handle backspace
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace') {
+            const cursorPosition = input.selectionStart;
+            const valueBeforeCursor = input.value.substring(0, cursorPosition);
+            
+            // If we're right after a comma and space
+            if (valueBeforeCursor.endsWith(', ')) {
+                e.preventDefault();
+                // Remove both the comma and space
+                input.value = valueBeforeCursor.slice(0, -2) + input.value.substring(cursorPosition);
+                // Set cursor position
+                input.setSelectionRange(cursorPosition - 2, cursorPosition - 2);
+            }
+        }
+    });
+  });
 
   // Functions
 
@@ -292,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function handleSendOtp() {
-    // const email = forgotEmailInput.value.trim();
+    const email = forgotEmailInput.value;
     if (!email) {
       alert('Please enter your email.');
       return;
@@ -322,8 +372,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function handleResetPassword() {
-    // const otp = otpInput.value.trim();
-    // const newPassword = newPasswordInput.value.trim();
+    const otp = otpInput.value;
+    const newPassword = newPasswordInput.value;
     if (!otp || !newPassword) {
       alert('Please enter the OTP and new password.');
       return;
@@ -360,10 +410,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function handleUpload() {
     const description = descriptionInput.value.trim();
-    // const recipientName = recipientInput.value.trim();
-    // const currentUrl = currentUrlInput.value.trim();
-    // const projectName = projectInput.value.trim();
-    // const priority = priorityInput.value.trim();
+    const recipientName = recipientInput.value;
+    const currentUrl = currentUrlInput.value;
+    const projectName = projectInput.value;
+    const priority = priorityInput.value;
+
+    // Get CC recipients without trimming
+    const ccInput = document.querySelector('.cc-recipient-input');
+    const ccRecipients = ccInput.value
+        .split(',')
+        .filter(value => value && value !== 'None' && value !== recipientName);
+
+    // Remove duplicates
+    const uniqueCcRecipients = [...new Set(ccRecipients)];
 
     if (!clipboardDataUrl) {
       alert('Please paste or drop an image or video before uploading.');
@@ -400,7 +459,8 @@ document.addEventListener('DOMContentLoaded', function() {
       mediaType,
       projectId,
       priority,
-      currentUrl
+      currentUrl,
+      uniqueCcRecipients.join(',') // Add CC recipients
     )
     .then(responseData => {
       hideLoader();
@@ -414,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function uploadToServer(dataUrl, description, recipientName, type, projectId, priority, tabUrl) {
+  function uploadToServer(dataUrl, description, recipientName, type, projectId, priority, tabUrl, ccRecipients) {
     const blob = dataURLtoBlob(dataUrl);
 
     const formData = new FormData();
@@ -424,6 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
     formData.append('project_id', projectId);
     formData.append('severity', priority);
     formData.append('tab_url', tabUrl);
+    formData.append('cc_recipients', ccRecipients); // Add CC recipients
 
     return fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
@@ -518,6 +579,12 @@ document.addEventListener('DOMContentLoaded', function() {
     projectInput.value = '';
     priorityInput.value = 'low';
     fetchCurrentTabUrl();
+
+    // Clear CC recipient input
+    const ccInput = document.querySelector('.cc-recipient-input');
+    if (ccInput) {
+        ccInput.value = '';
+    }
   }
 
   function preventDefaults(e) {
@@ -557,3 +624,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+

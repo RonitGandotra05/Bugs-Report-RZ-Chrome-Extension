@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bugs Report RZ",
   "description": "Take a screenshot and upload it to Dashboard.",
-  "version": "1.5.0",
+  "version": "1.7.0",
   "permissions": [
     "tabs"
   ],

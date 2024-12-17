@@ -163,6 +163,34 @@ label {
   background-color: #f9f9f9;
   cursor: default;
 }
+
+/* Add these styles in the <style> section */
+.cc-recipient-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cc-recipient-input {
+  flex: 1;
+}
+
+.remove-cc-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.remove-cc-btn:hover {
+  background-color: #cc0000;
+}
 </style>
 </head>
 <body>
@@ -230,6 +258,15 @@ label {
   <datalist id="recipient-list">
     <option value="None">None</option>
   </datalist>
+
+  <!-- Add CC Recipients section -->
+  <label for="cc-recipients-container">CC Recipients (max 4):</label>
+  <div id="cc-recipients-container">
+    <div class="cc-recipient-row">
+      <input class="cc-recipient-input" list="recipient-list" placeholder="Type to search CC recipient...">
+      <button class="remove-cc-btn" style="display: none;">×</button>
+    </div>
+  </div>
 
   <!-- Project Input + Datalist -->
   <label for="project-input">Select Project:</label>
