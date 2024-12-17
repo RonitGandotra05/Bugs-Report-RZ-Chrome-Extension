@@ -126,16 +126,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('paste', handlePaste);
 
   // Add this function after other event listeners
-  document.querySelector('.cc-recipient-input').addEventListener('input', function(e) {
-    const input = e.target;
-    const value = input.value;
-    
-    // Get the current recipient being typed (after the last comma)
-    const lastCommaIndex = value.lastIndexOf(',');
-    const currentRecipient = lastCommaIndex >= 0 ? value.slice(lastCommaIndex + 1) : value;
-    
-    // Create a temporary input for the datalist to work with the current recipient
-    input.setAttribute('data-before', value.slice(0, lastCommaIndex + 1));
+  const ccInput = document.querySelector('.cc-recipient-input');
+  ccInput.addEventListener('input', function(e) {
+    const value = this.value;
     
     if (value.endsWith(',')) {
         // Split values
@@ -149,28 +142,27 @@ document.addEventListener('DOMContentLoaded', function() {
         recipients = recipients.slice(0, 4);
         
         // Add back the comma and a single space
-        input.value = recipients.join(',') + ', ';
+        this.value = recipients.join(',') + ', ';
         
         // Move cursor to the end
-        input.setSelectionRange(input.value.length, input.value.length);
+        this.setSelectionRange(this.value.length, this.value.length);
     }
-    
-    // Add keydown event listener to handle backspace
-    input.addEventListener('keydown', function(e) {
-        if (e.key === 'Backspace') {
-            const cursorPosition = input.selectionStart;
-            const valueBeforeCursor = input.value.substring(0, cursorPosition);
-            
-            // If we're right after a comma and space
-            if (valueBeforeCursor.endsWith(', ')) {
-                e.preventDefault();
-                // Remove both the comma and space
-                input.value = valueBeforeCursor.slice(0, -2) + input.value.substring(cursorPosition);
-                // Set cursor position
-                input.setSelectionRange(cursorPosition - 2, cursorPosition - 2);
-            }
+  });
+
+  ccInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Backspace') {
+        const cursorPosition = this.selectionStart;
+        const valueBeforeCursor = this.value.substring(0, cursorPosition);
+        
+        // If we're right after a comma and space
+        if (valueBeforeCursor.endsWith(', ')) {
+            e.preventDefault();
+            // Remove both the comma and space
+            this.value = valueBeforeCursor.slice(0, -2) + this.value.substring(cursorPosition);
+            // Set cursor position
+            this.setSelectionRange(cursorPosition - 2, cursorPosition - 2);
         }
-    });
+    }
   });
 
   // Functions
@@ -415,13 +407,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const projectName = projectInput.value;
     const priority = priorityInput.value;
 
-    // Get CC recipients without trimming
+    // Get CC recipients with exact names from datalist
     const ccInput = document.querySelector('.cc-recipient-input');
+    const recipientList = document.getElementById('recipient-list');
+    const availableRecipients = Array.from(recipientList.options).map(opt => opt.value);
+    
+    // Split by comma and match with exact names from datalist
     const ccRecipients = ccInput.value
         .split(',')
+        .map(value => {
+            // Find the matching recipient from the datalist
+            return availableRecipients.find(recipient => 
+                value.trim() === recipient || value.trim() === recipient.trim()
+            );
+        })
         .filter(value => value && value !== 'None' && value !== recipientName);
 
-    // Remove duplicates
+    // Remove duplicates while preserving exact names
     const uniqueCcRecipients = [...new Set(ccRecipients)];
 
     if (!clipboardDataUrl) {
@@ -460,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
       projectId,
       priority,
       currentUrl,
-      uniqueCcRecipients.join(',') // Add CC recipients
+      uniqueCcRecipients.join(',')  // Send exact names from datalist
     )
     .then(responseData => {
       hideLoader();
