@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Event Listener for Dashboard Button
   dashboardButton.addEventListener('click', function() {
-    chrome.tabs.create({ url: 'https://exquisite-tarsier-27371d.netlify.app/homeV2' });
+    chrome.tabs.create({ url: 'https://bugszap.netlify.app/homeV2' });
   });
 
   // Event Listeners for Media Upload
@@ -129,40 +129,67 @@ document.addEventListener('DOMContentLoaded', function() {
   const ccInput = document.querySelector('.cc-recipient-input');
   ccInput.addEventListener('input', function(e) {
     const value = this.value;
+    this.setAttribute('list', 'recipient-list');
     
-    if (value.endsWith(',')) {
-        // Split values
-        let recipients = value.split(',')
-            .filter(r => r && r !== 'None');
-        
-        // Remove duplicates
-        recipients = [...new Set(recipients)];
-        
-        // Limit to 4 recipients
-        recipients = recipients.slice(0, 4);
-        
-        // Add back the comma and a single space
-        this.value = recipients.join(',') + ', ';
-        
-        // Move cursor to the end
-        this.setSelectionRange(this.value.length, this.value.length);
+    // Check if the value matches any option in the datalist
+    const options = Array.from(document.getElementById('recipient-list').options);
+    const isExactMatch = options.some(opt => opt.value === value);
+    
+    // If it's an exact match (recipient selected), prevent further typing
+    if (isExactMatch) {
+        this.addEventListener('keydown', function(e) {
+            // Allow only Backspace and Delete keys
+            if (e.key !== 'Backspace' && e.key !== 'Delete') {
+                e.preventDefault();
+            }
+        });
     }
   });
 
-  ccInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Backspace') {
-        const cursorPosition = this.selectionStart;
-        const valueBeforeCursor = this.value.substring(0, cursorPosition);
-        
-        // If we're right after a comma and space
-        if (valueBeforeCursor.endsWith(', ')) {
-            e.preventDefault();
-            // Remove both the comma and space
-            this.value = valueBeforeCursor.slice(0, -2) + this.value.substring(cursorPosition);
-            // Set cursor position
-            this.setSelectionRange(cursorPosition - 2, cursorPosition - 2);
-        }
+  // Add this after other event listeners
+  const addCcBtn = document.getElementById('add-cc-btn');
+  addCcBtn.addEventListener('click', function() {
+    const ccContainer = document.getElementById('cc-recipients-container');
+    const existingRows = ccContainer.querySelectorAll('.cc-recipient-row');
+    
+    // Limit to 4 CC recipients
+    if (existingRows.length >= 4) {
+        alert('Maximum 4 CC recipients allowed');
+        return;
     }
+    
+    // Create new row
+    const newRow = document.createElement('div');
+    newRow.className = 'cc-recipient-row';
+    
+    // Create input with the same behavior
+    const input = document.createElement('input');
+    input.className = 'cc-recipient-input';
+    input.setAttribute('list', 'recipient-list');
+    input.placeholder = `Type to search CC recipient ${existingRows.length + 1}...`;
+    
+    // Add the same input event listener to new inputs
+    input.addEventListener('input', function(e) {
+        const value = this.value;
+        this.setAttribute('list', 'recipient-list');
+        
+        // Check if the value matches any option in the datalist
+        const options = Array.from(document.getElementById('recipient-list').options);
+        const isExactMatch = options.some(opt => opt.value === value);
+        
+        // If it's an exact match (recipient selected), prevent further typing
+        if (isExactMatch) {
+            this.addEventListener('keydown', function(e) {
+                // Allow only Backspace and Delete keys
+                if (e.key !== 'Backspace' && e.key !== 'Delete') {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+    
+    newRow.appendChild(input);
+    ccContainer.appendChild(newRow);
   });
 
   // Functions
@@ -407,20 +434,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const projectName = projectInput.value;
     const priority = priorityInput.value;
 
-    // Get CC recipients with exact names from datalist
-    const ccInput = document.querySelector('.cc-recipient-input');
-    const recipientList = document.getElementById('recipient-list');
-    const availableRecipients = Array.from(recipientList.options).map(opt => opt.value);
-    
-    // Split by comma and match with exact names from datalist
-    const ccRecipients = ccInput.value
-        .split(',')
-        .map(value => {
-            // Find the matching recipient from the datalist
-            return availableRecipients.find(recipient => 
-                value.trim() === recipient || value.trim() === recipient.trim()
-            );
-        })
+    // Get CC recipients from all inputs (now each input has only one recipient)
+    const ccInputs = document.querySelectorAll('.cc-recipient-input');
+    const ccRecipients = Array.from(ccInputs)
+        .map(input => input.value)
         .filter(value => value && value !== 'None' && value !== recipientName);
 
     // Remove duplicates while preserving exact names
@@ -582,11 +599,16 @@ document.addEventListener('DOMContentLoaded', function() {
     priorityInput.value = 'low';
     fetchCurrentTabUrl();
 
-    // Clear CC recipient input
-    const ccInput = document.querySelector('.cc-recipient-input');
-    if (ccInput) {
-        ccInput.value = '';
-    }
+    // Clear all CC recipient inputs except the first one
+    const ccContainer = document.getElementById('cc-recipients-container');
+    const ccInputs = ccContainer.querySelectorAll('.cc-recipient-row');
+    ccInputs.forEach((row, index) => {
+        if (index === 0) {
+            row.querySelector('.cc-recipient-input').value = '';
+        } else {
+            row.remove();
+        }
+    });
   }
 
   function preventDefaults(e) {

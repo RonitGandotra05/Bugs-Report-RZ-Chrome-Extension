@@ -259,12 +259,30 @@ label {
     <option value="None">None</option>
   </datalist>
 
-  <!-- Add CC Recipients section -->
-  <label for="cc-recipients-container">CC Recipients (max 4):</label>
+  <!-- Update the CC Recipients section -->
+  <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+    <label for="cc-recipients-container" style="margin: 0; line-height: 1;">CC Recipients:</label>
+    <button id="add-cc-btn" style="
+      width: 20px; 
+      height: 20px; 
+      padding: 0; 
+      margin: 0;
+      margin-top: -2px;
+      background: #000; 
+      color: white; 
+      border: none; 
+      border-radius: 3px; 
+      font-size: 14px; 
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    ">+</button>
+  </div>
   <div id="cc-recipients-container">
     <div class="cc-recipient-row">
       <input class="cc-recipient-input" list="recipient-list" placeholder="Type to search CC recipient...">
-      <button class="remove-cc-btn" style="display: none;">×</button>
     </div>
   </div>
 
