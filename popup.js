@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let resetEmail = null; // Stores email during password reset flow
 
   // FastAPI Endpoint
-  const API_BASE_URL = 'https://bugapi.tripxap.com';
+  const API_BASE_URL = 'https://bugapi.techsech.com';
 
   // Set initial priority options (already in HTML, but we keep reference)
   const priorityOptions = ['low', 'medium', 'high'];
